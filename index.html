@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Direct Discord Client v2</title>
+    <title>Discord Lite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -38,7 +38,6 @@
 </head>
 <body class="font-sans h-screen flex flex-col">
 
-    <!-- 認証セクション -->
     <div id="auth-section" class="w-full max-w-md mx-auto my-auto p-8 rounded-lg shadow-xl" style="background-color: var(--bg-secondary);">
         <h1 class="text-2xl font-bold text-center mb-2">Welcome back!</h1>
         <p class="text-center text-sm mb-6" style="color:var(--text-secondary)">We're so excited to see you again!</p>
@@ -59,14 +58,11 @@
         </form>
     </div>
 
-    <!-- メインアプリ -->
     <div id="main-app" class="hidden flex-1 flex min-h-0">
-        <!-- サーバーリスト -->
         <div class="w-20 p-2 flex flex-col items-center gap-2 overflow-y-auto" style="background-color: var(--bg-tertiary);">
             <div id="guild-list" class="flex flex-col items-center gap-2"></div>
         </div>
         <div class="flex-1 flex min-h-0" style="background-color: var(--bg-secondary);">
-            <!-- チャンネルリスト -->
             <div id="channel-panel" class="hidden w-60 p-2 flex-col border-r" style="border-color: var(--border-color);">
                 <div class="flex justify-between items-center p-2 mb-2">
                     <h2 id="guild-name" class="font-bold text-lg truncate"></h2>
@@ -76,7 +72,6 @@
                 </div>
                 <div id="channel-list" class="flex-1 overflow-y-auto space-y-1"></div>
             </div>
-            <!-- チャットセクション -->
             <div id="chat-section" class="hidden flex-1 flex flex-col min-h-0">
                 <div class="p-3 border-b flex items-center justify-between" style="border-color: var(--border-color);">
                     <div class="flex items-center gap-2">
@@ -94,25 +89,22 @@
     </div>
 
     <script>
+        const LOGIN_PROXY_URL = '/api/discord';
         const API_BASE_URL = 'https://discord.com/api/v9';
         const GATEWAY_URL = 'wss://gateway.discord.gg/?v=9&encoding=json';
         
         let userToken = null, currentGuildId = '', currentChannelId = '';
         let guildsCache = [], channelsCache = {};
         
-        // --- WebSocket関連の変数 ---
         let ws = null, sessionId = null, heartbeatInterval = null, lastSequence = null;
 
-        // --- 初期化処理 ---
         window.addEventListener('DOMContentLoaded', () => {
             initTheme();
             document.getElementById('login-form').addEventListener('submit', handleLogin);
 
             const storedToken = localStorage.getItem('token');
             if (storedToken) {
-                // ローカルストレージに "MT...TE" のように「"」付きで保存される場合があるため削除
-                const cleanToken = storedToken.replace(/"/g, '');
-                loginWithToken(cleanToken);
+                loginWithToken(storedToken.replace(/"/g, ''));
             }
         });
         
@@ -122,7 +114,6 @@
             }
         }
         
-        // --- 認証とログアウト ---
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -138,49 +129,44 @@
             spinner.classList.remove('hidden');
 
             try {
-                // 🔴 注意: このリクエストはブラウザのCORSポリシーにより失敗する可能性が高いです
-                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                // ログインだけプロキシねｗ
+                const response = await fetch(LOGIN_PROXY_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ login: email, password: password })
                 });
 
                 const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.message || 'Login failed');
-                }
+                if (!response.ok) throw new Error(data.message || 'Login failed');
                 
                 if (data.token) {
                     loginWithToken(data.token);
                 } else if (data.mfa) {
-                    // 2段階認証の対応は今回は省略
                     throw new Error('Two-factor authentication is required.');
                 }
-
             } catch (error) {
-                errorDiv.textContent = `Login Error: ${error.message}. Please check your credentials. (Note: CORS errors may occur in browser)`;
+                errorDiv.textContent = `Login Error: ${error.message}`;
             } finally {
-                loginButton.disabled = false;
-                buttonText.classList.remove('hidden');
-                spinner.classList.add('hidden');
+                 loginButton.disabled = false;
+                 buttonText.classList.remove('hidden');
+                 spinner.classList.add('hidden');
             }
         }
         
         async function loginWithToken(token) {
             userToken = token;
+            // トークンチェックは直叩き笑
             const user = await apiRequest('/users/@me');
-
             if (user && user.id) {
                 localStorage.setItem('token', userToken);
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 initializeApp();
             } else {
-                logout(); // トークンが無効ならログアウト
+                logout();
             }
         }
-        
+
         function logout() {
             localStorage.removeItem('token');
             userToken = null;
@@ -189,34 +175,41 @@
             document.getElementById('auth-section').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
         }
-        
+
         async function initializeApp() {
             await loadGuilds();
             connectWebSocket();
         }
 
-        // --- APIリクエスト ---
         async function apiRequest(path, method = 'GET', bodyData = null) {
             if (!userToken) return null;
             try {
                 const options = {
                     method: method,
-                    headers: { 'Authorization': userToken, 'Content-Type': 'application/json' }
+                    headers: {
+                        'Authorization': userToken,
+                        'Content-Type': 'application/json'
+                    }
                 };
-                if (bodyData) options.body = JSON.stringify(bodyData);
+                if (bodyData) {
+                    options.body = JSON.stringify(bodyData);
+                }
                 const response = await fetch(API_BASE_URL + path, options);
+
                 if (response.status === 401) {
                     logout();
                     return null;
                 }
-                return response.status === 204 ? {} : await response.json();
+                if (response.status === 204) return {};
+                
+                return await response.json();
             } catch (e) {
                 console.error('API Request failed:', e);
+                alert("APIリクエストでエラーが発生しました。CORSポリシー違反の可能性があります。");
                 return null;
             }
         }
         
-        // --- UI更新 (サーバー & チャンネル) ---
         async function loadGuilds() {
             const [settings, guilds] = await Promise.all([
                 apiRequest('/users/@me/settings'),
@@ -226,7 +219,6 @@
             if (!guilds) return;
             guildsCache = guilds;
             
-            // サーバーの並び順をsettingsのguild_positionsに基づいてソート
             const sortedGuilds = [...guilds].sort((a, b) => {
                 const posA = settings?.guild_positions?.indexOf(a.id) ?? -1;
                 const posB = settings?.guild_positions?.indexOf(b.id) ?? -1;
@@ -294,7 +286,6 @@
             }
         }
         
-        // --- UI更新 (メッセージ) ---
         function renderMessage(msg, prepend = false) {
             const container = document.getElementById('message-container');
             const div = document.createElement('div');
@@ -342,7 +333,6 @@
             await apiRequest(`/channels/${currentChannelId}/messages`, 'POST', { content: content, nonce: tempId });
         }
         
-        // --- WebSocket ---
         function connectWebSocket() {
             ws = new WebSocket(GATEWAY_URL);
             ws.onopen = () => console.log('WebSocket Connected');
@@ -351,7 +341,6 @@
                 console.warn('WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
                 updateWsStatus(false);
                 clearInterval(heartbeatInterval);
-                // 必要であれば再接続処理をここに追加
             };
             ws.onerror = (error) => console.error('WebSocket Error:', error);
         }
@@ -361,18 +350,17 @@
             if (payload.s) { lastSequence = payload.s; }
 
             switch (payload.op) {
-                case 0: // Dispatch
+                case 0:
                     handleDispatch(payload.t, payload.d);
                     break;
-                case 1: // Heartbeat
+                case 1:
                     sendHeartbeat();
                     break;
-                case 10: // Hello
+                case 10:
                     startHeartbeat(payload.d.heartbeat_interval);
                     identify();
                     break;
-                case 11: // Heartbeat ACK
-                    // Heartbeat acknowledged
+                case 11:
                     break;
             }
         }
@@ -391,7 +379,7 @@
         
         function startHeartbeat(ms) {
             if (heartbeatInterval) clearInterval(heartbeatInterval);
-            sendHeartbeat(); // 即時送信
+            sendHeartbeat();
             heartbeatInterval = setInterval(sendHeartbeat, ms);
         }
 
@@ -419,13 +407,17 @@
             statusIndicator.title = isConnected ? 'WebSocket Connected' : 'WebSocket Disconnected';
         }
 
-        // --- ユーティリティ ---
-        document.getElementById('message-input').addEventListener('keypress', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+        document.getElementById('message-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
         function scrollToBottom() {
             const el = document.getElementById('message-container');
             el.scrollTop = el.scrollHeight;
         }
-
     </script>
 </body>
 </html>
