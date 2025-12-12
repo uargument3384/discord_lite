@@ -46,6 +46,7 @@ export default async function handler(req, res) {
           login: login,
           password: password,
           undelete: false,
+          captcha_key: captcha_key,
           login_source: null,
           gift_code_sku_id: null
       }),
