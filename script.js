@@ -110,8 +110,8 @@
         g.forEach(s => {
             let el = document.createElement('div');
             el.id = `guild-${s.id}`;
-            // w-12 h-12 (48px) を明示的に指定してサイズ崩れを防ぐ
-            el.className = 'server-icon cursor-pointer w-12 h-12';
+            // w-12 h-12クラスを削除し、CSSで制御する
+            el.className = 'server-icon cursor-pointer'; 
             el.title = s.name;
             el.onclick = () => loadChannels(s, el);
             if (s.icon) {
