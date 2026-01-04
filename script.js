@@ -7,7 +7,8 @@
     let isLoadingMore = false;
     let attachedFile = null;
     let availableCommands = [];
-    const sunIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 18a1 1 0 01-1-1v-1a1 1 0 112 0v1a1 1 0 01-1 1zM4.05 14.536l.707-.707a1 1 0 10-1.414-1.414l-.707.707a1 1 0 001.414 1.414zM1.5 10a1 1 0 011-1h1a1 1 0 110 2H2.5a1 1 0 01-1-1zm15 0a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zM5.464 5.05a1 1 0 010-1.414l.707-.707a1 1 0 111.414 1.414l-.707.707a1 1 0 01-1.414 0z"></path></svg>`;
+    
+    const sunIcon = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>`;
     const moonIcon = `<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>`;
 
     const getAccounts = () => JSON.parse(localStorage.getItem('accounts')) || [];
@@ -18,7 +19,7 @@
     const generateSuperProperties = () => btoa(JSON.stringify({ os: "Windows", browser: "Chrome", device: "", system_locale: "ja", browser_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", browser_version: "120.0.0.0", os_version: "10", release_channel: "stable", client_build_number: 262355 }));
 
     function cleanupState() {
-        if (ws) ws.close();
+        if (ws) { ws.onclose = null; ws.close(); }
         ws = null; currentChannel = null; lastSequence = null; attachedFile = null;
         if (heartbeatInterval) clearInterval(heartbeatInterval);
         if (timeoutInterval) clearInterval(timeoutInterval);
@@ -29,6 +30,7 @@
         cancelReply(); cancelAttachment();
     }
 
+    // APIリクエスト処理。401検知を追加
     async function apiRequest(token, path, method = 'GET', body = null, isFormData = false) {
         const o = { method, headers: { 'Authorization': token, 'X-Super-Properties': generateSuperProperties() } };
         if (body) {
@@ -36,6 +38,12 @@
         }
         try {
             const r = await fetch(`${API_BASE}${path}`, o);
+            // 401 Unauthorized 検知
+            if (r.status === 401) {
+                console.warn("Token Invalid/Expired");
+                handleSessionInvalid(); // セッション切れ処理
+                return { error: { message: "Unauthorized" }, status: 401 };
+            }
             const data = r.status === 204 ? {} : await r.json();
             if (!r.ok) { return { error: data, status: r.status }; }
             return { data, status: r.status };
@@ -45,17 +53,38 @@
         }
     }
 
+    // セッション切れ時の処理
+    function handleSessionInvalid() {
+        if (!currentAccount) return;
+        cleanupState();
+        // 特定のユーザーの再ログイン画面を表示
+        showLoginScreen(currentAccount);
+    }
+
     async function addAccount(token) {
         document.getElementById('login-error').innerText = "";
         if (!token || !token.trim()) { document.getElementById('login-error').innerText = "トークンは必須です。"; return }
         token = token.trim().replace(/^"|"$/g, '');
         const b = document.getElementById('add-account-button'), t = document.getElementById('add-account-button-text'), s = document.getElementById('login-spinner');
         t.classList.add('hidden'); s.classList.remove('hidden'); b.disabled = true;
+        
+        // トークン検証
         const result = await apiRequest(token, '/users/@me');
+        
         t.classList.remove('hidden'); s.classList.add('hidden'); b.disabled = false;
+        
         if (result.data && result.data.id) {
-            const a = getAccounts(), i = a.findIndex(acc => acc.id === result.data.id), n = { ...result.data, token };
-            if (i > -1) a[i] = n; else a.push(n);
+            const a = getAccounts();
+            const i = a.findIndex(acc => acc.id === result.data.id);
+            const n = { ...result.data, token };
+            
+            if (i > -1) {
+                // 既存アカウントの更新（再ログイン時など）
+                a[i] = n;
+            } else {
+                a.push(n);
+            }
+            
             saveAccounts(a);
             switchAccount(result.data.id);
         } else {
@@ -67,22 +96,38 @@
         cleanupState();
         setActiveAccountId(id);
         const a = getAccounts().find(a => a.id === id);
+        
         if (!a) { showLoginScreen(); return }
         currentAccount = a;
         document.getElementById('token-input').value = '';
-        updateView('app'); renderUserInfo(); renderAccountSwitcher(); loadGuilds(); connectWS();
+        
+        // とりあえずViewをAppに切り替えるが、loadGuilds等で401が出ればhandleSessionInvalidが呼ばれる
+        updateView('app'); 
+        renderUserInfo(); renderAccountSwitcher(); loadGuilds();
+        
+        setTimeout(connectWS, 100); 
     }
 
     function deleteAccount(id, e) {
-        e.stopPropagation();
+        if(e) e.stopPropagation();
         if (!confirm("このアカウントを削除しますか？")) return;
         let a = getAccounts();
         a = a.filter(acc => acc.id !== id);
         saveAccounts(a);
-        if (getActiveAccountId() === id) {
-            if (a.length > 0) switchAccount(a[0].id);
-            else { localStorage.removeItem('activeAccountId'); showLoginScreen(); }
-        } else renderAccountSwitcher();
+        
+        // 削除後に画面を更新
+        const activeId = getActiveAccountId();
+        if (activeId === id || !activeId) {
+             localStorage.removeItem('activeAccountId');
+             showLoginScreen(); // 一覧画面へ戻る
+        } else {
+             // ログイン中ならスイッチャーだけ更新、一覧画面なら一覧更新
+             if (!document.getElementById('auth-section').classList.contains('hidden')) {
+                 renderSavedAccountsList();
+             } else {
+                 renderAccountSwitcher();
+             }
+        }
     }
 
     function renderUserInfo() {
@@ -104,13 +149,12 @@
     async function loadGuilds() {
         if (!currentAccount) return;
         const { data: g } = await apiRequest(currentAccount.token, '/users/@me/guilds');
-        if (!g) return;
+        if (!g) return; // 401エラーの場合は apiRequest 内で処理される
         const l = document.getElementById('guild-list');
         l.innerHTML = '';
         g.forEach(s => {
             let el = document.createElement('div');
             el.id = `guild-${s.id}`;
-            // 重要な修正: w-12 h-12 クラスを追加しサイズ崩れを防ぐ
             el.className = 'server-icon cursor-pointer w-12 h-12';
             el.title = s.name;
             el.onclick = () => loadChannels(s, el);
@@ -163,8 +207,19 @@
         
         loadSlashCommands(ch);
 
-        const { data: ms } = await apiRequest(currentAccount.token, `/channels/${ch.id}/messages?limit=100`);
+        const res = await apiRequest(currentAccount.token, `/channels/${ch.id}/messages?limit=100`);
         con.innerHTML = '';
+
+        if (res.error) {
+            // 401の場合は apiRequest 内でリダイレクトされるが、それ以外のエラー用
+            con.innerHTML = `<div class="m-auto flex flex-col items-center justify-center h-full text-center p-4">
+                <div class="text-red-500 font-bold text-lg mb-2">読み込みエラー</div>
+                <div class="text-[var(--text-secondary)]">${res.error.message || '不明なエラーが発生しました'}</div>
+            </div>`;
+            return;
+        }
+
+        const ms = res.data;
         if (Array.isArray(ms) && ms.length > 0) {
             oldestMessageId = ms[ms.length - 1].id;
             const lastReadId = ms[0].id;
@@ -178,12 +233,28 @@
     async function loadMoreMessages() { if (isLoadingMore || !oldestMessageId || !currentChannel) return; isLoadingMore = true; const con = document.getElementById('message-container'); const oldHeight = con.scrollHeight; const { data: messages } = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages?limit=100&before=${oldestMessageId}`); if (Array.isArray(messages) && messages.length > 0) { oldestMessageId = messages[messages.length - 1].id; const fragment = document.createDocumentFragment(); messages.reverse(); let lastMessageInBatch = { authorId: null, timestamp: null }; messages.forEach(msg => { const isGrouped = msg.author.id === lastMessageInBatch.authorId && (new Date(msg.timestamp) - new Date(lastMessageInBatch.timestamp)) < 300 * 1000; const msgEl = createMessageElement(msg, isGrouped); fragment.appendChild(msgEl); lastMessageInBatch = { authorId: msg.author.id, timestamp: msg.timestamp }; }); con.prepend(fragment); con.scrollTop = con.scrollHeight - oldHeight; } else { oldestMessageId = null; } isLoadingMore = false; }
     function scrollToMessage(id) { const el = document.getElementById(`message-${id}`); if(el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('bg-yellow-500/10', 'transition-all', 'duration-1000'); setTimeout(()=>el.classList.remove('bg-yellow-500/10'), 2000); } }
     
-    function renderSystemMessage(message) {
+    function renderClydeError(errorText) {
         const con = document.getElementById('message-container');
         const el = document.createElement('div');
-        el.className = 'system-message flex gap-3 pt-4';
-        const clydeAvatar = 'https://cdn.discordapp.com/embed/avatars/1.png';
-        el.innerHTML = `<img src="${clydeAvatar}" class="w-10 h-10 rounded-full mt-0.5 flex-shrink-0"><div class="flex-1 min-w-0"><div><b class="text-sm">Clydeもどき</b><span class="text-xs opacity-40 ml-2">${new Date().toLocaleTimeString()}</span></div><div class="text-sm break-words">${message}</div></div>`;
+        el.className = 'clyde-message flex gap-3 pt-1 pb-2';
+        const clydeSrc = '/images/clyde.png'; 
+        const fallbackSrc = 'https://cdn.discordapp.com/app-assets/1089635038827593848/1089635038827593848.png';
+
+        el.innerHTML = `
+            <img src="${clydeSrc}" onerror="this.src='${fallbackSrc}'" class="w-10 h-10 rounded-full mt-0.5 flex-shrink-0 object-contain">
+            <div class="flex-1 min-w-0">
+                <div>
+                    <b class="text-sm">Clyde</b>
+                    <span class="bg-blue-500 text-white text-[10px] px-1 rounded ml-1">BOT</span>
+                </div>
+                <div class="text-sm break-words text-[var(--text-primary)]">
+                   送信エラー: ${errorText}
+                </div>
+                <div class="text-xs mt-1 text-[var(--text-secondary)]">
+                    このメッセージはあなただけに表示されています。<span onclick="this.closest('.clyde-message').remove()" class="cursor-pointer text-[var(--text-link)] hover:underline">このメッセージを削除する</span>
+                </div>
+            </div>
+        `;
         con.appendChild(el);
         con.scrollTop = con.scrollHeight;
     }
@@ -226,12 +297,36 @@
         const nonce = Date.now().toString(); const payload = { content, nonce, tts: false };
         if (replyingTo) payload.message_reference = { message_id: replyingTo.messageId };
         if (attachedFile) return sendMessageWithFile(payload);
+        
         input.value = ''; handleInput(); cancelReply();
+        
         const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages`, 'POST', payload);
-        if (res.error) { input.value = content; handleInput(); renderSystemMessage(`エラー: ${res.error.message || '不明なエラーが発生しました。'}`); console.error("Send Error:", res.error); }
+        if (res.error) {
+            input.value = content; handleInput();
+            renderClydeError(res.error.message || '不明なエラーが発生しました');
+            console.error("Send Error:", res.error);
+        }
     }
     
-    async function sendMessageWithFile(payload={}) { if (!attachedFile) return; const fd = new FormData(); fd.append('files[0]', attachedFile, attachedFile.name); fd.append('payload_json', JSON.stringify(payload)); const input = document.getElementById('message-input'); if (payload.content) input.value = ''; handleInput(); cancelReply(); cancelAttachment(); const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages`, 'POST', fd, true); if (res.error) console.error("File Send Error", res.error); }
+    async function sendMessageWithFile(payload={}) { 
+        if (!attachedFile) return; 
+        const fd = new FormData(); 
+        fd.append('files[0]', attachedFile, attachedFile.name); 
+        fd.append('payload_json', JSON.stringify(payload)); 
+        const input = document.getElementById('message-input'); 
+        const originalContent = payload.content;
+
+        if (payload.content) input.value = ''; 
+        handleInput(); cancelReply(); cancelAttachment(); 
+        
+        const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages`, 'POST', fd, true); 
+        if (res.error) {
+            if(originalContent) { input.value = originalContent; handleInput(); }
+            renderClydeError(res.error.message || 'ファイルの送信に失敗しました');
+            console.error("File Send Error", res.error); 
+        }
+    }
+
     function startReply(m) { replyingTo = { messageId: m.id }; document.getElementById('reply-bar').classList.remove('hidden'); document.getElementById('reply-username').innerText = `@${m.author.global_name || m.author.username}`; document.getElementById('message-input').focus(); }
     function cancelReply() { replyingTo = null; document.getElementById('reply-bar').classList.add('hidden'); }
     async function deleteMessage(id) { if (!currentChannel) return; if (confirm("本当にこのメッセージを削除しますか？")) { await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages/${id}`, 'DELETE'); } }
@@ -241,22 +336,194 @@
     function setAttachment(file) { if (!file) return; attachedFile = file; document.getElementById('attachment-preview-name').textContent = file.name; document.getElementById('attachment-preview-bar').classList.remove('hidden'); handleInput(); }
     function cancelAttachment() { attachedFile = null; document.getElementById('file-input').value = ""; document.getElementById('attachment-preview-bar').classList.add('hidden'); handleInput(); }
 
-    function connectWS() { if (!currentAccount || !currentAccount.token) return; if (ws) ws.close(); ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json'); ws.onmessage = e => { const d = JSON.parse(e.data); if (d.s) lastSequence = d.s; if (d.op === 10) { if (heartbeatInterval) clearInterval(heartbeatInterval); heartbeatInterval = setInterval(()=>ws.send(JSON.stringify({ op: 1, d: lastSequence })), d.d.heartbeat_interval); ws.send(JSON.stringify({ op: 2, d: { token: currentAccount.token, properties: { $os: "windows", $browser: "chrome", $device: "" } } })); } else if (d.t === 'MESSAGE_CREATE') { const con = document.getElementById('message-container'); const isScrolled = (con.scrollHeight - con.scrollTop - con.clientHeight) < 100; if (d.d.channel_id === currentChannel?.id) { renderMsg(d.d, { isNew: true, isPrepended: false }); if (isScrolled) { con.scrollTop = con.scrollHeight; apiRequest(currentAccount.token, `/channels/${d.d.channel_id}/messages/${d.d.id}/ack`, 'POST', {}); } } else if (d.d.guild_id && (d.d.mentions?.some(u=>u.id === currentAccount.id) || d.d.mention_everyone)) { updatePings(d.d.channel_id, 1, false, d.d.guild_id); } else if (!d.d.guild_id) { updatePings(d.d.channel_id, 1, true); } } else if (d.t === 'MESSAGE_DELETE' && d.d.channel_id === currentChannel?.id) document.getElementById(`message-${d.d.id}`)?.remove(); else if (d.t === 'MESSAGE_UPDATE' && d.d.channel_id === currentChannel?.id) { const el = document.getElementById(`message-${d.d.id}`); if (el && d.d.content !== undefined) { const contentEl = el.querySelector('.message-content-text'); if(contentEl) contentEl.innerHTML = parseMarkdown(d.d.content); } } }; ws.onclose = () => { if (heartbeatInterval) clearInterval(heartbeatInterval); if (currentAccount) setTimeout(connectWS, 5000); }; ws.onerror = e => { console.error('WS Error:', e); ws.close(); }; }
+    function connectWS() { 
+        if (!currentAccount || !currentAccount.token) return; 
+        if (ws) ws.close(); 
+        ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json'); 
+        ws.onmessage = e => { 
+            const d = JSON.parse(e.data); 
+            if (d.s) lastSequence = d.s; 
+            if (d.op === 10) { 
+                if (heartbeatInterval) clearInterval(heartbeatInterval); 
+                heartbeatInterval = setInterval(()=>ws.send(JSON.stringify({ op: 1, d: lastSequence })), d.d.heartbeat_interval); 
+                ws.send(JSON.stringify({ op: 2, d: { token: currentAccount.token, properties: { $os: "windows", $browser: "chrome", $device: "" } } })); 
+            } else if (d.t === 'MESSAGE_CREATE') { 
+                const con = document.getElementById('message-container'); 
+                const isScrolled = (con.scrollHeight - con.scrollTop - con.clientHeight) < 100; 
+                if (d.d.channel_id === currentChannel?.id) { 
+                    renderMsg(d.d, { isNew: true, isPrepended: false }); 
+                    if (isScrolled) { 
+                        con.scrollTop = con.scrollHeight; 
+                        apiRequest(currentAccount.token, `/channels/${d.d.channel_id}/messages/${d.d.id}/ack`, 'POST', {}); 
+                    } 
+                } else if (d.d.guild_id && (d.d.mentions?.some(u=>u.id === currentAccount.id) || d.d.mention_everyone)) { 
+                    updatePings(d.d.channel_id, 1, false, d.d.guild_id); 
+                } else if (!d.d.guild_id) { 
+                    updatePings(d.d.channel_id, 1, true); 
+                } 
+            } else if (d.t === 'MESSAGE_DELETE' && d.d.channel_id === currentChannel?.id) document.getElementById(`message-${d.d.id}`)?.remove(); 
+            else if (d.t === 'MESSAGE_UPDATE' && d.d.channel_id === currentChannel?.id) { 
+                const el = document.getElementById(`message-${d.d.id}`); 
+                if (el && d.d.content !== undefined) { 
+                    const contentEl = el.querySelector('.message-content-text'); 
+                    if(contentEl) contentEl.innerHTML = parseMarkdown(d.d.content); 
+                } 
+            } 
+        }; 
+        ws.onclose = () => { 
+            if (heartbeatInterval) clearInterval(heartbeatInterval); 
+            if (currentAccount && !document.getElementById('auth-section').classList.contains('flex')) {
+                setTimeout(connectWS, 5000); 
+            }
+        }; 
+        ws.onerror = e => { console.error('WS Error:', e); ws.close(); }; 
+    }
+
     function updatePings(id, count, isDm, guildId=null) { if (count > 0) { if (isDm) pingCounts[id] = { isDm: true }; else pingCounts[id] = { isDm: false, guildId: guildId }; } else { delete pingCounts[id]; } updatePingDots(); }
     function updatePingDots() { document.querySelectorAll('.ping-dot').forEach(d=>d.remove()); Object.keys(pingCounts).forEach(id=>{ const el = document.getElementById(`channel-${id}`); if (el && !el.querySelector('.ping-dot')) el.insertAdjacentHTML('beforeend', '<div class="ping-dot"></div>'); const {guildId} = pingCounts[id]; if (guildId) { const gEl = document.getElementById(`guild-${guildId}`); if (gEl && !gEl.querySelector('.ping-dot')) gEl.insertAdjacentHTML('beforeend', '<div class="ping-dot"></div>'); } }); }
     async function checkTimeoutStatus(guildId) { if (timeoutInterval) clearInterval(timeoutInterval); const { data: m } = await apiRequest(currentAccount.token, `/guilds/${guildId}/members/${currentAccount.id}`); const end = m && m.communication_disabled_until ? new Date(m.communication_disabled_until) : null; if (end && end > new Date()) { const update = () => { const now = new Date(), diff = (end - now) / 1000; if (diff <= 0) { setInputState(true); clearInterval(timeoutInterval); } else { const d = Math.floor(diff/86400), h = Math.floor(diff/3600)%24, m = Math.floor(diff/60)%60, s = Math.floor(diff%60); setInputState(false, `タイムアウト中: ${d>0?`${d}d `:''}${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`); } }; update(); timeoutInterval = setInterval(update, 1000); } else setInputState(true); }
     function setInputState(enabled, placeholder="メッセージを送信") { const i = document.getElementById('message-input'), s = document.getElementById('send-button'); i.disabled = !enabled; i.placeholder = placeholder; s.disabled = !enabled || (i.value.trim() === '' && !attachedFile); }
     function handleInput() { const i = document.getElementById('message-input'), c = document.getElementById('char-counter'), p = document.getElementById('slash-command-picker'); const l = i.value.length; i.style.height = 'auto'; i.style.height = (i.scrollHeight) + 'px'; setInputState(!i.disabled); c.textContent = l > 0 ? `${l}/2000` : ''; c.style.color = l > 2000 ? 'red' : ''; if (i.value.startsWith('/')) { p.classList.remove('hidden'); renderSlashCommands(); } else p.classList.add('hidden'); }
-    function updateView(state) { const a = document.getElementById('auth-section'), m = document.getElementById('main-app'); if (state === 'auth') { a.classList.remove('hidden'); a.classList.add('flex'); m.classList.add('hidden'); document.getElementById('cancel-add-account-button').style.display = getAccounts().length > 0 ? 'block' : 'none'; } else { a.classList.add('hidden'); a.classList.remove('flex'); m.classList.remove('hidden'); m.classList.add('flex'); handleResize(); } }
+    
+    // View Management Logic
+    function updateView(state) { 
+        const a = document.getElementById('auth-section'); 
+        const m = document.getElementById('main-app'); 
+        
+        if (state === 'auth') { 
+            a.classList.remove('hidden'); a.classList.add('flex'); 
+            m.classList.add('hidden'); 
+        } else { 
+            a.classList.add('hidden'); a.classList.remove('flex'); 
+            m.classList.remove('hidden'); m.classList.add('flex'); 
+            handleResize(); 
+        } 
+    }
+
+    // ログイン画面（アカウント一覧）の描画
+    function showLoginScreen(reloginAccount = null) {
+        updateView('auth');
+        const listContainer = document.getElementById('saved-accounts-list');
+        const accounts = getAccounts();
+
+        if (reloginAccount) {
+            // 再ログインモード
+            showTokenInput(reloginAccount);
+        } else if (accounts.length > 0) {
+            // アカウント選択モード
+            document.getElementById('account-selection-view').classList.remove('hidden');
+            document.getElementById('account-selection-view').classList.add('flex');
+            document.getElementById('token-input-view').classList.add('hidden');
+            renderSavedAccountsList();
+        } else {
+            // 初期状態（アカウントなし）
+            showTokenInput(null);
+        }
+    }
+
+    function renderSavedAccountsList() {
+        const container = document.getElementById('saved-accounts-list');
+        const accounts = getAccounts();
+        container.innerHTML = '';
+        
+        if(accounts.length === 0) {
+            showTokenInput(null);
+            return;
+        }
+
+        accounts.forEach(acc => {
+            const av = acc.avatar ? `https://cdn.discordapp.com/avatars/${acc.id}/${acc.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${acc.discriminator % 5}.png`;
+            const el = document.createElement('div');
+            el.className = 'account-card p-3 rounded-md bg-[var(--bg-primary)] cursor-pointer flex items-center gap-3 transition-transform';
+            el.innerHTML = `
+                <img src="${av}" class="w-10 h-10 rounded-full">
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-sm truncate">${acc.global_name || acc.username}</div>
+                    <div class="text-xs opacity-60 truncate">@${acc.username}</div>
+                </div>
+                <div class="text-[var(--text-secondary)] hover:text-red-500 p-2" onclick="deleteAccount('${acc.id}', event)">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                </div>
+            `;
+            // アカウントクリック時はログイン試行（Tokenが生きてるか確認 -> 死んでたら再ログイン画面へ）
+            el.onclick = (e) => {
+                 if(e.target.closest('svg')) return; // 削除ボタン回避
+                 switchAccount(acc.id);
+            };
+            container.appendChild(el);
+        });
+    }
+
+    function showTokenInput(account = null) {
+        document.getElementById('account-selection-view').classList.add('hidden');
+        document.getElementById('account-selection-view').classList.remove('flex');
+        
+        const view = document.getElementById('token-input-view');
+        view.classList.remove('hidden');
+        view.classList.add('flex');
+        
+        const reloginInfo = document.getElementById('relogin-user-info');
+        const tokenInput = document.getElementById('token-input');
+        const backBtn = document.getElementById('back-to-accounts-btn');
+        const title = document.getElementById('auth-title');
+
+        if (account) {
+            // 再ログイン表示
+            reloginInfo.classList.remove('hidden');
+            reloginInfo.classList.add('flex');
+            title.innerText = "再ログイン";
+            
+            const av = account.avatar ? `https://cdn.discordapp.com/avatars/${account.id}/${account.avatar}.png?size=128` : `https://cdn.discordapp.com/embed/avatars/${account.discriminator % 5}.png`;
+            document.getElementById('relogin-avatar').src = av;
+            document.getElementById('relogin-name').innerText = account.global_name || account.username;
+            document.getElementById('relogin-username').innerText = account.username;
+            
+            tokenInput.placeholder = "新しいトークンを入力してください";
+            document.getElementById('add-account-button-text').innerText = "ログイン";
+            
+            backBtn.classList.add('hidden'); // 強制再ログイン時は戻らせない（UX判断）
+            
+            // 内部的には追加ではなく更新になるように、currentAccountを設定しておく
+            currentAccount = account; 
+        } else {
+            // 新規追加表示
+            reloginInfo.classList.add('hidden');
+            reloginInfo.classList.remove('flex');
+            title.innerText = "アカウントを追加";
+            tokenInput.placeholder = "Discord Token";
+            document.getElementById('add-account-button-text').innerText = "追加";
+            
+            if (getAccounts().length > 0) {
+                backBtn.classList.remove('hidden');
+            } else {
+                backBtn.classList.add('hidden');
+            }
+        }
+        
+        document.getElementById('login-error').innerText = "";
+        tokenInput.value = "";
+        tokenInput.focus();
+    }
+
     function applyTheme() { const b = document.getElementById('theme-toggle-btn'); if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme:dark)').matches)) { document.documentElement.classList.add('dark'); b.innerHTML = sunIcon; } else { document.documentElement.classList.remove('dark'); b.innerHTML = moonIcon; } }
     function handleResize() { if (window.innerWidth >= 768) { showChatView(); document.getElementById('sidebar-view').classList.remove('hidden'); } else { if (currentChannel) showChatView(); else showSidebarView(); } }
     function showSidebarView() { currentChannel = null; document.getElementById('sidebar-view').classList.remove('hidden'); document.getElementById('chat-section').classList.add('hidden'); }
     function showChatView() { document.getElementById('sidebar-view').classList.add('hidden'); document.getElementById('chat-section').classList.remove('hidden'); document.getElementById('chat-section').classList.add('flex'); }
 
     document.addEventListener('DOMContentLoaded', () => {
-        applyTheme(); const a = getAccounts(); let i = getActiveAccountId();
-        if (a.length > 0 && a.find(acc => acc.id === i)) switchAccount(i); else if (a.length > 0) switchAccount(a[0].id); else { showLoginScreen(); }
-        function showLoginScreen() { updateView('auth') }
+        applyTheme(); 
+        const a = getAccounts(); 
+        let i = getActiveAccountId();
+        
+        // 自動ログインロジック：
+        // 1. アクティブなIDがあるなら、それを試行（switchAccount内で401なら再ログイン画面へ）
+        // 2. なければ、アカウント一覧画面を表示（showLoginScreen）
+        if (a.length > 0 && a.find(acc => acc.id === i)) {
+             switchAccount(i);
+        } else {
+             showLoginScreen();
+        }
+
         document.getElementById('add-account-button').onclick = () => addAccount(document.getElementById('token-input').value);
         document.getElementById('dm-icon').onclick = e => loadDms(e.currentTarget);
         document.getElementById('send-button').onclick = sendMessage;
@@ -272,6 +539,10 @@
         document.getElementById('theme-toggle-btn').addEventListener('click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); applyTheme(); });
         document.getElementById('user-info-panel').onclick = () => document.getElementById('account-switcher').classList.toggle('hidden');
         document.getElementById('add-account-switcher-btn').onclick = () => { document.getElementById('account-switcher').classList.add('hidden'); showLoginScreen(); };
-        document.getElementById('cancel-add-account-button').onclick = () => { const a = getAccounts(); if (a.length > 0) switchAccount(getActiveAccountId() || a[0].id); };
+        
+        // ログイン画面周りのイベント
+        document.getElementById('show-add-account-form-btn').onclick = () => showTokenInput(null);
+        document.getElementById('back-to-accounts-btn').onclick = () => showLoginScreen(); // 一覧に戻る
+
         window.addEventListener('resize', handleResize);
     });
