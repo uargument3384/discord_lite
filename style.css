@@ -79,11 +79,88 @@ html:not(.dark) ::-webkit-scrollbar-thumb { background-color: #ccc; }
     z-index: 0;
 }
 
-/* メッセージ構造の改善 */
-.message-group { position: relative; margin-top: 1.0625rem; display: flex; flex-direction: column; }
-.message-group.grouped { margin-top: 0px; }
-.message-group:hover { background-color: rgba(0,0,0,0.03); }
-html.dark .message-group:hover { background-color: rgba(255,255,255,0.015); }
+/* --- Message Layout Fixes --- */
+
+/* 行ごとのラッパーとしての設定 */
+.message-group {
+    width: 100%;
+    margin-top: 17px;     /* 通常メッセージの間隔 */
+    display: block;       /* flex-colからblockへ変更 (中身でFlex制御するため) */
+    position: relative;
+    user-select: text;
+}
+
+/* 連続した発言（グループ）の場合はマージンを詰める */
+.message-group.grouped {
+    margin-top: 0px;      /* ピタッとくっつける */
+    margin-bottom: 0px;
+}
+
+/* ホバー時の背景 */
+.message-group:hover {
+    background-color: rgba(4, 4, 5, 0.07);
+}
+html.dark .message-group:hover {
+    background-color: rgba(2, 2, 2, 0.07);
+}
+
+/* コンテンツテキストのフォントと色 */
+.message-content-text {
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.375rem;
+    overflow-wrap: break-word; /* 長い単語でレイアウト崩れを防ぐ */
+    word-break: break-word;    /* 必要なら単語の途中でも改行 */
+}
+
+/* アバター周りの微調整 */
+.avatar-decoration {
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* ツールバーの位置と挙動 */
+.message-toolbar {
+    top: -12px !important; /* 少し上に浮かせる */
+    right: 16px;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+    transition: all 0.1s ease-in-out;
+}
+.message-group:hover .message-toolbar {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/* 編集履歴（ログ） */
+.history-line {
+    font-size: 0.85em;
+    opacity: 0.6;
+    text-decoration: line-through;
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* 返信の線 */
+.reply-spine {
+    border-color: var(--reply-spine-color);
+    left: -14px !important; /* 位置調整 */
+    top: 50% !important;
+    transform: translateY(-50%);
+    width: 28px !important;
+    height: 12px !important;
+    border-bottom: 0 !important;
+}
+
+/* 入力エリア修正 */
+#message-input {
+    min-height: 44px; /* 入力欄の高さを確保 */
+    max-height: 50vh;
+    overflow-y: auto;
+}
 
 /* メッセージツールバーの改善 */
 .message-toolbar { 
