@@ -80,7 +80,7 @@
             border-radius: 50% !important; overflow: hidden;
             cursor: pointer; transition: border-radius 0.2s ease;
             position: relative;
-            background-color: var(--bg-quaternary); /* アイコンなしの場合の背景 */
+            background-color: var(--bg-quaternary);
         }
         .server-icon:hover, .server-icon.active { border-radius: 16px !important; }
 
@@ -90,15 +90,13 @@
         }
         .server-folder {
             display: flex; flex-direction: column; align-items: center; gap: 8px;
-            background-color: var(--bg-tertiary); /* 閉じた時のフォルダ背景など（簡易） */
+            background-color: var(--bg-tertiary);
             border-radius: 24px;
             transition: all 0.2s;
         }
-        .server-folder.closed .folder-items { display: none; }
-        
         .folder-icon {
             width: 48px; height: 48px; 
-            border-radius: 24px; /* 最初は四角に近い丸 */
+            border-radius: 24px;
             background-color: var(--folder-bg);
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
@@ -174,7 +172,7 @@
             border-radius: 50%; object-fit: cover;
             position: relative; z-index: 10;
         }
-        /* 修正箇所: 縦横比固定と中央配置 */
+        
         .avatar-decoration { 
             position: absolute; 
             top: 50%; left: 50%; 
@@ -322,10 +320,8 @@
     let commandDebounce = null;
     let memberDebounce = null;
     let maxCharCount = 2000;
-    
-    // Server Sorting & Folder Support
-    let guildFolders = []; // WS "READY" event
-    let guildDataMap = new Map(); // REST API Data (id -> obj)
+    let guildFolders = []; // For storing official folder structure
+    let guildDataMap = new Map(); // Store API data for efficient access
 
     // Plugins
     const plugins = JSON.parse(localStorage.getItem('plugins')) || {
@@ -471,154 +467,95 @@
         document.getElementById('settings-modal').classList.remove('hidden');
     }
 
-    // ギルドデータをAPIから取得しMapに保存 -> とりあえず標準順で描画（後にREADYイベントで上書きされる）
     async function loadGuilds() {
         if (!currentAccount) return;
         const res = await apiRequest(currentAccount.token, '/users/@me/guilds');
         if (res.error) { if (res.status === 401) handleSessionInvalid(); return; }
-        const g = res.data;
-        if (!Array.isArray(g)) return; 
         
-        // Mapに保存
+        // 保存（後で並び替えに使用）
         guildDataMap.clear();
-        g.forEach(server => guildDataMap.set(server.id, server));
+        res.data.forEach(s => guildDataMap.set(s.id, s));
 
-        // READYイベント前の一時描画 (順不同)
-        if (guildFolders.length === 0) renderServerListStandard(g);
-    }
-
-    // デフォルト描画 (フォルダ情報なし)
-    function renderServerListStandard(guilds) {
-        const l = document.getElementById('guild-list'); l.innerHTML = '';
-        guilds.forEach(s => l.appendChild(createServerIconElement(s)));
-    }
-
-    // フォルダ構造に基づいた描画
-    function renderServerListFromFolders() {
-        if (guildFolders.length === 0 || guildDataMap.size === 0) return;
-        const l = document.getElementById('guild-list'); l.innerHTML = '';
-
-        guildFolders.forEach(item => {
-            if (item.guild_ids) {
-                // Folder Logic
-                const folderWrapper = document.createElement('div');
-                folderWrapper.className = 'server-folder-wrapper';
-                
-                // アイコン一覧プレビュー用
-                const folderIcon = document.createElement('div');
-                folderIcon.className = 'folder-icon server-icon'; // server-icon class for size consistency
-                if (item.color) folderIcon.style.backgroundColor = `rgba(${(item.color >> 16) & 255}, ${(item.color >> 8) & 255}, ${item.color & 255}, 0.4)`;
-                
-                const validGuilds = item.guild_ids.map(id => guildDataMap.get(id)).filter(Boolean);
-                if (validGuilds.length === 0) return; // 空フォルダはスキップ
-
-                // 小さいアイコンを並べる
-                validGuilds.slice(0, 4).forEach(g => {
-                    const thumb = document.createElement('img');
-                    thumb.className = 'folder-icon-thumb';
-                    thumb.src = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-                    folderIcon.appendChild(thumb);
-                });
-
-                // 展開された中身
-                const folderItems = document.createElement('div');
-                folderItems.className = 'server-folder items-center gap-2 pt-2 pb-2'; // Tailwind gap-2
-                // 初期状態は閉じる
-                folderItems.style.display = 'none';
-                
-                validGuilds.forEach(g => folderItems.appendChild(createServerIconElement(g)));
-
-                // Click Action
-                folderIcon.onclick = () => {
-                    const isClosed = folderItems.style.display === 'none';
-                    folderItems.style.display = isClosed ? 'flex' : 'none';
-                    folderWrapper.classList.toggle('expanded', isClosed);
-                };
-
-                folderWrapper.appendChild(folderIcon);
-                folderWrapper.appendChild(folderItems);
-                l.appendChild(folderWrapper);
-
-            } else if (item.id) {
-                // Single Guild in User Settings? (Usually folder items only or loose ids? data structure varies)
-                // Discord API sends {id: null, guild_ids: []} for folder, OR plain guild IDs in older versions.
-                // Modern structure in `guild_folders`: array of { guild_ids: [str], id: int/null, name, color }
-                // Guilds NOT in any folder are usually sent in a specific folder object with no ID, or implied order?
-                // Actually `guild_folders` contains EVERYTHING. 
-                // If a guild is not in a folder, it might be in a folder object with id: null?
-                // Let's check Discord logic: yes, top-level guilds are effectively folders with 1 item if they aren't "in" a folder?
-                // No, usually un-foldered guilds appear as { guild_ids: [id], id: null } logic in array? 
-                // Wait, documentation says guild_folders returns order of folders and guilds not in folders?
-                // Actually it seems only Folders are explicit. Loose guilds... ?
-                // Let's use simple logic: Flatten the ID list from `guild_positions` (if available) or assume `guild_folders` covers all?
-                // NOTE: Real client behavior: user_settings.guild_folders is the definitive order list.
-                // If id is null, it acts as a container? No, let's implement flexible parser.
-            }
-        });
-        
-        // `guild_folders` には "全ギルド" が含まれているとは限らない場合(ゴミデータ等)、
-        // もしくはサーバーに参加したばかりの場合があるので、漏れがないかチェック
-        // ただし Lite 版としては `guild_folders` を信じて描画する。
-        // API (user_settings) data:
-        // guild_folders: [ { guild_ids: ["123", "456"], id: 777, ... }, { guild_ids: ["999"], id: null } ]
-        // id: null means these guilds are NOT in a folder visually, but listed in this order.
-        // We need to iterate again carefully.
-        
-        l.innerHTML = ''; // Reset
-        guildFolders.forEach(folder => {
-            if (!folder.guild_ids || folder.guild_ids.length === 0) return;
-
-            if (folder.id) {
-                // Real Folder
-                const folderWrapper = document.createElement('div');
-                folderWrapper.className = 'server-folder-wrapper';
-                const folderIcon = document.createElement('div');
-                folderIcon.className = 'folder-icon server-icon'; 
-                if (folder.color) {
-                    folderIcon.style.backgroundColor = `rgba(${(folder.color >> 16) & 255}, ${(folder.color >> 8) & 255}, ${folder.color & 255}, 0.4)`;
-                }
-                const validGuilds = folder.guild_ids.map(id => guildDataMap.get(id)).filter(Boolean);
-                if (validGuilds.length === 0) return;
-
-                validGuilds.slice(0, 4).forEach(g => {
-                    const thumb = document.createElement('img');
-                    thumb.className = 'folder-icon-thumb';
-                    thumb.src = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-                    folderIcon.appendChild(thumb);
-                });
-
-                const folderItems = document.createElement('div');
-                folderItems.className = 'server-folder flex flex-col gap-2'; 
-                folderItems.style.display = 'none'; // Closed by default
-                validGuilds.forEach(g => folderItems.appendChild(createServerIconElement(g)));
-
-                folderIcon.onclick = () => {
-                    const isClosed = folderItems.style.display === 'none';
-                    folderItems.style.display = isClosed ? 'flex' : 'none';
-                };
-
-                folderWrapper.appendChild(folderIcon);
-                folderWrapper.appendChild(folderItems);
-                l.appendChild(folderWrapper);
-            } else {
-                // Loose guilds (not in folder) - Display them directly
-                folder.guild_ids.forEach(gid => {
-                    const g = guildDataMap.get(gid);
-                    if (g) l.appendChild(createServerIconElement(g));
-                });
-            }
-        });
+        // WSからのフォルダ情報がまだない場合は通常のリスト表示
+        if(guildFolders.length === 0) {
+            const l = document.getElementById('guild-list'); l.innerHTML = '';
+            res.data.forEach(s => l.appendChild(createServerIconElement(s)));
+        } else {
+            renderServerListFromFolders(); // 既存フォルダ情報があれば適用
+        }
     }
 
     function createServerIconElement(s) {
-        let el = document.createElement('div'); 
-        el.id = `guild-${s.id}`; 
-        el.className = 'server-icon cursor-pointer w-12 h-12 mb-2'; 
-        el.title = s.name; 
-        el.onclick = () => loadChannels(s, el);
+        let el = document.createElement('div'); el.id = `guild-${s.id}`; el.className = 'server-icon cursor-pointer w-12 h-12 mb-1'; el.title = s.name; el.onclick = () => loadChannels(s, el);
         if (s.icon) { el.innerHTML = `<img src="https://cdn.discordapp.com/icons/${s.id}/${s.icon}.png?size=128" class="object-cover w-full h-full">`; }
         else { el.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-700 text-white font-bold text-sm">${s.name.replace(/[^\w\s]/gi, '').split(' ').map(w => w[0]).join('').substring(0, 2)}</div>`; }
         return el;
+    }
+
+    function renderServerListFromFolders() {
+        const l = document.getElementById('guild-list'); 
+        if(!l) return;
+        l.innerHTML = ''; // Reset
+
+        // guild_folders をループ
+        // サーバーに入っているが folder リストに無い（ゴミデータや新規参加）ものを探すのは本来必要だが
+        // User Settingsの guild_folders は基本的に網羅されている
+        
+        guildFolders.forEach(item => {
+            if (item.guild_ids && item.guild_ids.length > 0) {
+                // Folder logic
+                if (item.id) {
+                    // 本当のフォルダ
+                    const folderWrapper = document.createElement('div');
+                    folderWrapper.className = 'server-folder-wrapper';
+                    
+                    const validGuilds = item.guild_ids.map(id => guildDataMap.get(id)).filter(Boolean);
+                    if(validGuilds.length === 0) return;
+
+                    const folderIcon = document.createElement('div');
+                    folderIcon.className = 'folder-icon';
+                    if(item.color) {
+                        const r = (item.color >> 16) & 255;
+                        const g = (item.color >> 8) & 255;
+                        const b = item.color & 255;
+                        folderIcon.style.backgroundColor = `rgba(${r},${g},${b},0.4)`;
+                    }
+
+                    // Thumbs
+                    validGuilds.slice(0, 4).forEach(g => {
+                        const thumb = document.createElement('img');
+                        thumb.className = 'folder-icon-thumb';
+                        thumb.src = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/0.png`;
+                        folderIcon.appendChild(thumb);
+                    });
+
+                    // Items Container
+                    const itemsDiv = document.createElement('div');
+                    itemsDiv.className = 'server-folder';
+                    itemsDiv.style.display = 'none'; // closed default
+                    validGuilds.forEach(g => itemsDiv.appendChild(createServerIconElement(g)));
+
+                    // Click to toggle
+                    folderIcon.onclick = () => {
+                        const isClosed = itemsDiv.style.display === 'none';
+                        itemsDiv.style.display = isClosed ? 'flex' : 'none';
+                    };
+
+                    folderWrapper.appendChild(folderIcon);
+                    folderWrapper.appendChild(itemsDiv);
+                    l.appendChild(folderWrapper);
+
+                } else {
+                    // フォルダ外のサーバーたち (そのまま描画)
+                    item.guild_ids.forEach(gid => {
+                        const s = guildDataMap.get(gid);
+                        if (s) l.appendChild(createServerIconElement(s));
+                    });
+                }
+            }
+        });
+        
+        // ※ folderに含まれていないサーバーのケア（省略、必要なら追加）
     }
 
     async function loadChannels(g, t) {
@@ -642,54 +579,40 @@
         updatePingDots();
     }
 
-    // WS & READY Logic
-    function connectWS() { 
-        if (!currentAccount || !currentAccount.token) return; 
-        if (ws) ws.close(); 
-        ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json'); 
-        ws.onmessage = e => { 
-            const d = JSON.parse(e.data); 
-            if (d.s) lastSequence = d.s; 
-            if (d.op === 10) { 
-                if (heartbeatInterval) clearInterval(heartbeatInterval); heartbeatInterval = setInterval(()=>ws.send(JSON.stringify({ op: 1, d: lastSequence })), d.d.heartbeat_interval); 
-                ws.send(JSON.stringify({ op: 2, d: { token: currentAccount.token, properties: { $os: "windows", $browser: "chrome", $device: "" } } })); 
-            } else if (d.t === 'READY') {
-                // Get user settings and render proper server order
-                if (d.d.user_settings && d.d.user_settings.guild_folders) {
-                    guildFolders = d.d.user_settings.guild_folders;
-                    renderServerListFromFolders(); // Re-render with folders
-                }
-            } else if (d.t === 'MESSAGE_CREATE') { 
-                if (d.d.channel_id === currentChannel?.id) { 
-                    if(plugins.messageLogger) messageStore[d.d.id] = d.d;
-                    if(d.d.nonce) { const temp = document.querySelector(`[id^=message-temp-${d.d.nonce}]`); if(temp) temp.remove(); }
-                    renderMsg(d.d, { isNew: true }); 
-                    const con = document.getElementById('message-container');
-                    if ((con.scrollHeight - con.scrollTop - con.clientHeight) < 200) { con.scrollTop = con.scrollHeight; apiRequest(currentAccount.token, `/channels/${d.d.channel_id}/messages/${d.d.id}/ack`, 'POST', {}); }
-                } 
-                if (d.d.guild_id && (d.d.mentions?.some(u=>u.id === currentAccount.id) || d.d.mention_everyone)) updatePings(d.d.channel_id, 1, false, d.d.guild_id); 
-                else if (!d.d.guild_id) updatePings(d.d.channel_id, 1, true); 
-            } else if (d.t === 'MESSAGE_DELETE' && d.d.channel_id === currentChannel?.id) {
-                const el = document.getElementById(`message-${d.d.id}`);
-                if (el) { if (plugins.messageLogger) { el.classList.add('deleted-log'); if(!el.querySelector('.deleted-tag')) el.querySelector('.message-content-text').insertAdjacentHTML('afterbegin', '<span class="text-red-500 font-bold text-xs mr-1 deleted-tag">[DELETED]</span> '); } else { el.remove(); } }
-            } else if (d.t === 'MESSAGE_UPDATE' && d.d.channel_id === currentChannel?.id) { 
-                const el = document.getElementById(`message-${d.d.id}`); 
-                if (el && d.d.content !== undefined) { 
-                    if (plugins.messageLogger && messageStore[d.d.id]) { const oldContent = messageStore[d.d.id].content; if(oldContent !== d.d.content) d.d.old_content = oldContent; messageStore[d.d.id].content = d.d.content; }
-                    const newMsg = { ...messageStore[d.d.id] || {}, ...d.d, author: (messageStore[d.d.id]||{}).author || d.d.author }; if(newMsg.author) el.outerHTML = createMessageElement(newMsg, false).outerHTML; 
-                } 
-            } 
-        }; 
-        ws.onclose = () => { if (heartbeatInterval) clearInterval(heartbeatInterval); if (currentAccount && !document.getElementById('auth-section').classList.contains('flex')) setTimeout(connectWS, 5000); }; 
-        ws.onerror = e => { console.error('WS Error:', e); ws.close(); }; 
+    async function loadDms(t) {
+        if (!currentAccount) return;
+        document.querySelectorAll('.server-icon.active').forEach(e => e.classList.remove('active')); if (t) t.classList.add('active');
+        document.getElementById('guild-name').innerText = 'Direct Messages';
+        const { data: d } = await apiRequest(currentAccount.token, '/users/@me/channels');
+        if (!d || !Array.isArray(d)) return;
+        const l = document.getElementById('channel-list'); l.innerHTML = '';
+        d.sort((a, b) => (b.last_message_id || '0').localeCompare(a.last_message_id || '0')).forEach(dm => {
+            const recipient = dm.recipients?.[0] || {};
+            const name = dm.name || recipient.global_name || recipient.username || 'DM';
+            const avatar = recipient.avatar ? `https://cdn.discordapp.com/avatars/${recipient.id}/${recipient.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${recipient.discriminator % 5}.png`;
+            const el = document.createElement('div'); el.id = `channel-${dm.id}`; el.className = 'channel-item p-2 rounded cursor-pointer mb-1 text-sm truncate flex items-center gap-3';
+            el.innerHTML = `<img src="${avatar}" class="w-8 h-8 rounded-full"> <span class="flex-1">${name}</span>`; el.onclick = () => selectChannel(dm); l.appendChild(el);
+        });
+        updatePingDots();
     }
 
-    // --- (以下既存関数：DOM操作等は前と同じだが、getLastMessageAuthorId等必須ロジック保持) ---
-    function updatePings(id, count, isDm, guildId=null) { if (count > 0) { if (isDm) pingCounts[id] = { isDm: true }; else pingCounts[id] = { isDm: false, guildId: guildId }; } else { delete pingCounts[id]; } updatePingDots(); }
-    function updatePingDots() { document.querySelectorAll('.ping-dot').forEach(d=>d.remove()); Object.keys(pingCounts).forEach(id=>{ const el = document.getElementById(`channel-${id}`); if (el && !el.querySelector('.ping-dot')) el.insertAdjacentHTML('beforeend', '<div class="ping-dot"></div>'); const {guildId} = pingCounts[id]; if (guildId) { const gEl = document.getElementById(`guild-${guildId}`); if (gEl && !gEl.querySelector('.ping-dot')) gEl.insertAdjacentHTML('beforeend', '<div class="ping-dot"></div>'); } }); }
-    async function checkTimeoutStatus(guildId) { if (timeoutInterval) clearInterval(timeoutInterval); const { data: m } = await apiRequest(currentAccount.token, `/guilds/${guildId}/members/${currentAccount.id}`); const end = m && m.communication_disabled_until ? new Date(m.communication_disabled_until) : null; if (end && end > new Date()) { const update = () => { const now = new Date(), diff = (end - now) / 1000; if (diff <= 0) { setInputState(true); clearInterval(timeoutInterval); } else { const d = Math.floor(diff/86400), h = Math.floor(diff/3600)%24, m = Math.floor(diff/60)%60, s = Math.floor(diff%60); setInputState(false, `タイムアウト中: ${d>0?`${d}d `:''}${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`); } }; update(); timeoutInterval = setInterval(update, 1000); } else setInputState(true); }
-    function setInputState(enabled, placeholder="メッセージを送信") { const i = document.getElementById('message-input'), s = document.getElementById('send-button'); i.disabled = !enabled; i.placeholder = placeholder; s.disabled = !enabled || (i.value.trim() === '' && !attachedFile); }
-    
+    async function searchSlashCommands(query, channelId) {
+        if (!channelId) return [];
+        try {
+            const q = query || ""; const url = `/channels/${channelId}/application-commands/search?type=1&query=${encodeURIComponent(q)}&limit=10`;
+            const { data, error } = await apiRequest(currentAccount.token, url);
+            if(error) return []; return data?.application_commands || [];
+        } catch { return []; }
+    }
+
+    async function searchMembers(query, guildId) {
+        if (!guildId) return []; if (!query || query.length < 1) return [];
+        try {
+            const { data, error } = await apiRequest(currentAccount.token, `/guilds/${guildId}/members/search?query=${encodeURIComponent(query)}&limit=10`);
+            if (error) return []; return data || [];
+        } catch { return []; }
+    }
+
     function getLastMessageAuthorId() {
         const con = document.getElementById('message-container');
         const msgs = Array.from(con.querySelectorAll('.message-group:not(.message-sending)'));
@@ -807,7 +730,7 @@
         if (isPrepended) container.prepend(el); else container.appendChild(el); 
     }
     
-    // (Other handler functions unchanged...)
+    // (Restored functions: renderPopup, handleInput, etc.)
     function renderPopup(items, type, atIndex = 0) { const popup = document.getElementById('popup-picker'); popup.innerHTML = ''; if (!items || items.length === 0) { popup.classList.add('hidden'); return; } popup.classList.remove('hidden'); items.forEach(item => { const div = document.createElement('div'); div.className = 'popup-item'; if (type === 'command') { let optionsHtml = item.options ? item.options.map(o => `<span class="command-option-badge">${o.name}</span>`).join(' ') : ''; div.innerHTML = `<b>/${item.name}</b> ${optionsHtml} <span class="text-xs opacity-60 truncate flex-1">${item.description}</span>`; div.onclick = () => { document.getElementById('message-input').value = `/${item.name} `; document.getElementById('message-input').focus(); popup.classList.add('hidden'); handleInput(); }; } else { const u = item.user, av = u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=32` : `https://cdn.discordapp.com/embed/avatars/${u.discriminator % 5}.png`; div.innerHTML = `<img src="${av}" class="w-6 h-6 rounded-full"> <b>${item.nick || u.global_name || u.username}</b> <span class="text-xs opacity-60">@${u.username}</span>`; div.onclick = () => { const i = document.getElementById('message-input'); const before = i.value.substring(0, atIndex), after = i.value.substring(i.selectionEnd); i.value = `${before}<@${u.id}> ${after}`; i.focus(); popup.classList.add('hidden'); handleInput(); }; } popup.appendChild(div); }); }
     function handleInput() { const i = document.getElementById('message-input'), c = document.getElementById('char-counter'), popup = document.getElementById('popup-picker'); i.style.height = 'auto'; i.style.height = (i.scrollHeight) + 'px'; const val = i.value, l = val.length; c.textContent = l > 0 ? `${l}/${maxCharCount}` : ''; c.style.color = l > maxCharCount ? 'red' : ''; setInputState(!i.disabled); if (val.startsWith('/')) { const query = val.substring(1); if (commandDebounce) clearTimeout(commandDebounce); commandDebounce = setTimeout(async () => { const cmds = await searchSlashCommands(query, currentChannel.id); renderPopup(cmds, 'command'); }, 300); return; } const cursor = i.selectionEnd; const atMatch = val.substring(0, cursor).match(/@(\S*)$/); if (atMatch && currentChannel?.guild_id) { const query = atMatch[1]; if (!query) { popup.classList.add('hidden'); return; } if (memberDebounce) clearTimeout(memberDebounce); memberDebounce = setTimeout(async () => { const members = await searchMembers(query, currentChannel.guild_id); renderPopup(members, 'mention', cursor - query.length - 1); }, 300); } else { popup.classList.add('hidden'); } }
     async function sendMessage() { const input = document.getElementById('message-input'); const content = input.value.trim(); if (!currentChannel || (!content && !attachedFile)) return; if (content.length > maxCharCount) { if (confirm(`メッセージが${maxCharCount}文字を超えています。ファイルとして送信しますか？`)) { attachedFile = new File([content],"message.txt"); return sendMessageWithFile({}) } return; } const nonce = Date.now().toString(); const payload = { content, nonce, tts: false }; if (replyingTo) payload.message_reference = { message_id: replyingTo.messageId }; if (attachedFile) return sendMessageWithFile(payload); const tempId = `temp-${nonce}`; const tempMsg = { id: tempId, content: content, author: currentAccount, timestamp: new Date().toISOString(), nonce: nonce, referenced_message: replyingTo ? { id: replyingTo.messageId, author: replyingTo.author, content: 'Replying...' } : null }; renderMsg(tempMsg); const tempEl = document.getElementById(`message-${tempId}`); if(tempEl) tempEl.classList.add('message-sending'); input.value = ''; handleInput(); cancelReply(); const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages`, 'POST', payload); if (res.error) { if(tempEl) { tempEl.classList.remove('message-sending'); tempEl.classList.add('message-failed'); tempEl.onclick = () => { input.value = content; tempEl.remove(); handleInput(); }; } renderClydeError(res.error.message || '送信失敗'); } }
@@ -823,6 +746,11 @@
     function scrollToMessage(id) { const el = document.getElementById(`message-${id}`); if(el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('bg-yellow-500/10', 'transition-all', 'duration-1000'); setTimeout(()=>el.classList.remove('bg-yellow-500/10'), 2000); } }
     function parseMarkdown(text) { if (!text) return ''; let html = text.replace(/</g, '&lt;').replace(/>/g, '&gt;'); const codeBlocks = []; html = html.replace(/```(?:[\w]*\n)?([\s\S]*?)```/g, (m, c) => { codeBlocks.push(`<span class="md-code-block">${c}</span>`); return `__CODE_BLOCK_${codeBlocks.length - 1}__`; }); html = html.replace(/`([^`]+)`/g, (m, c) => { codeBlocks.push(`<span class="md-inline-code">${c}</span>`); return `__CODE_BLOCK_${codeBlocks.length - 1}__`; }); html = html.replace(/\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" class="text-[var(--text-link)] hover:underline">$1</a>'); html = html.replace(/^> (.*$)/gm, '<div class="md-quote">$1</div>').replace(/^>>> ([\s\S]*)/gm, '<div class="md-quote">$1</div>'); html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/__(.*?)__/g, '<u>$1</u>').replace(/~~(.*?)~~/g, '<s>$1</s>'); html = html.replace(/(?<!href="|">)(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-[var(--text-link)] hover:underline">$1</a>'); html = html.replace(/&lt;@!?(\d+)&gt;/g, (_, id) => `<span class="mention">@${id}</span>`); html = html.replace(/\n/g, '<br>'); html = html.replace(/__CODE_BLOCK_(\d+)__/g, (m, i) => codeBlocks[i]); return html; }
     function renderClydeError(errorText) { const con = document.getElementById('message-container'); const el = document.createElement('div'); el.className = 'clyde-message flex gap-3 pt-1 pb-2'; const clydeSrc = '/assets/clyde.png', fallbackSrc = 'https://cdn.discordapp.com/app-assets/1089635038827593848/1089635038827593848.png'; el.innerHTML = `<img src="${clydeSrc}" onerror="this.src='${fallbackSrc}'" class="w-10 h-10 rounded-full mt-0.5 flex-shrink-0 object-contain"><div class="flex-1 min-w-0"><div><b class="text-sm">Clyde</b><span class="bg-blue-500 text-white text-[10px] px-1 rounded ml-1">BOT</span></div><div class="text-sm break-words text-[var(--text-primary)]">送信エラー: ${errorText}</div><div class="text-xs mt-1 text-[var(--text-secondary)]">このメッセージはあなただけに表示されています。<span onclick="this.closest('.clyde-message').remove()" class="cursor-pointer text-[var(--text-link)] hover:underline">このメッセージを削除する</span></div></div>`; con.appendChild(el); con.scrollTop = con.scrollHeight; }
+    // --- Restored: Apply Theme, Handle Resize ---
+    function applyTheme() { const b = document.getElementById('theme-toggle-btn'); if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme:dark)').matches)) { document.documentElement.classList.add('dark'); if(b) b.innerHTML = sunIcon; } else { document.documentElement.classList.remove('dark'); if(b) b.innerHTML = moonIcon; } }
+    function handleResize() { if (window.innerWidth >= 768) { showChatView(); document.getElementById('sidebar-view').classList.remove('hidden'); } else { if (currentChannel) showChatView(); else showSidebarView(); } }
+    function showSidebarView() { currentChannel = null; document.getElementById('sidebar-view').classList.remove('hidden'); document.getElementById('chat-section').classList.add('hidden'); }
+    function showChatView() { document.getElementById('sidebar-view').classList.add('hidden'); document.getElementById('chat-section').classList.remove('hidden'); document.getElementById('chat-section').classList.add('flex'); }
 
     document.addEventListener('DOMContentLoaded', async () => {
         applyTheme(); await migrateOldData(); 
