@@ -694,8 +694,8 @@ function checkTimeoutStatus(g) { setInputState(true); } // Dummy implementation
 function handleResize() { if(window.innerWidth>=768){showChatView();document.getElementById('sidebar-view').classList.remove('hidden');}else if(currentChannel)showChatView();else showSidebarView(); }
 function showSidebarView() { document.getElementById('sidebar-view').classList.remove('hidden'); document.getElementById('chat-section').classList.add('hidden'); }
 function showChatView() { document.getElementById('sidebar-view').classList.add('hidden'); document.getElementById('chat-section').classList.remove('hidden'); document.getElementById('chat-section').classList.add('flex'); }
-
-function updatePingDots() {/* omitted */}
+function updatePings(id, count, isDm, guildId=null) { if (count > 0) { if (isDm) pingCounts[id] = { isDm: true }; else pingCounts[id] = { isDm: false, guildId: guildId }; } else { delete pingCounts[id]; } updatePingDots(); }
+function updatePingDots() { document.querySelectorAll('.ping-dot').forEach(d=>d.remove()); Object.keys(pingCounts).forEach(id=>{ const el = document.getElementById(`channel-${id}`); if (el && !el.querySelector('.ping-dot')) el.insertAdjacentHTML('beforeend', '<div class="ping-dot"></div>'); const {guildId} = pingCounts[id]; if (guildId) { const gEl = document.getElementById(`guild-${guildId}`); if (gEl && !gEl.querySelector('.ping-dot')) gEl.insertAdjacentHTML('beforeend', '<div class="ping-dot"></div>'); } }); }
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (localStorage.theme === 'dark' || (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
