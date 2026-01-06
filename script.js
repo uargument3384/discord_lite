@@ -45,7 +45,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // Make DM Icon clickable - binding directly
     document.getElementById('dm-icon').onclick = loadDms;
+
     document.getElementById('send-button').onclick = sendMessage;
     
     document.getElementById('attach-button').onclick = () => {
@@ -75,17 +77,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     document.getElementById('back-to-channels-btn').onclick = showSidebarView;
-    document.getElementById('open-settings-btn').onclick = (e) => {
-        e.stopPropagation();
-        renderSettingsModal();
-    };
+    document.getElementById('open-settings-btn').onclick = renderSettingsModal;
+    document.getElementById('add-account-switcher-btn').onclick = () => { document.getElementById('account-switcher').classList.add('hidden'); showLoginScreen(); };
     
-    // Explicit binding for account switching buttons inside auth screen
-    document.getElementById('add-account-switcher-btn').onclick = () => {
-        document.getElementById('account-switcher').classList.add('hidden');
-        showLoginScreen();
-    };
-
     window.addEventListener('resize', handleResize);
 
     const accounts = getAccounts();
@@ -170,9 +164,14 @@ function switchAccount(id) {
     setActiveAccountId(id);
     const accounts = getAccounts();
     const account = accounts.find(a => a.id === id);
-    if (!account) { showLoginScreen(); return; }
+    
+    if (!account) {
+        showLoginScreen();
+        return;
+    }
     currentAccount = account;
     maxCharCount = (currentAccount.premium_type === 2) ? 4000 : 2000;
+
     document.getElementById('token-input').value = '';
     updateView('app');
     renderCurrentUserPanel();
@@ -199,6 +198,7 @@ function showLoginScreen(reloginAccount = null) {
     document.getElementById('migration-view').classList.add('hidden');
     document.getElementById('token-input-view').classList.add('hidden');
     renderSavedAccountsList();
+    
     const accounts = getAccounts();
     if (accounts.length > 0 && !reloginAccount) {
         document.getElementById('account-selection-view').classList.remove('hidden');
@@ -286,12 +286,16 @@ function renderCurrentUserPanel() {
     nameEl.textContent = currentAccount.global_name || currentAccount.username;
     subEl.textContent = `@${currentAccount.username}`;
     
-    const avatar = currentAccount.avatar ? `https://cdn.discordapp.com/avatars/${currentAccount.id}/${currentAccount.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${currentAccount.discriminator % 5}.png`;
+    const avatar = currentAccount.avatar 
+        ? `https://cdn.discordapp.com/avatars/${currentAccount.id}/${currentAccount.avatar}.png?size=64` 
+        : `https://cdn.discordapp.com/embed/avatars/${currentAccount.discriminator % 5}.png`;
+        
     let deco = '';
     if(currentAccount.avatar_decoration_data) {
         const decoUrl = `https://cdn.discordapp.com/avatar-decoration-presets/${currentAccount.avatar_decoration_data.asset}.png?size=96`;
         deco = `<img src="${decoUrl}" class="avatar-decoration">`;
     }
+    
     avCont.innerHTML = `<img src="${avatar}" class="avatar-img shadow-sm rounded-full">${deco}`;
     renderAccountSwitcher();
 }
@@ -361,7 +365,9 @@ function renderFolders() {
 
             let folderColor = 'rgba(88, 101, 242, 0.4)';
             if (item.color) {
-                const r = (item.color >> 16) & 255; const g = (item.color >> 8) & 255; const b = item.color & 255;
+                const r = (item.color >> 16) & 255;
+                const g = (item.color >> 8) & 255;
+                const b = item.color & 255;
                 folderColor = `rgba(${r},${g},${b},0.4)`;
             }
             header.style.backgroundColor = folderColor;
@@ -374,8 +380,10 @@ function renderFolders() {
                 const isOpen = openFolderId === item.id;
                 if (isOpen) {
                     openFolderId = null;
-                    contentDiv.classList.add('hidden'); contentDiv.classList.remove('flex');
-                    header.classList.remove('folder-opened'); header.classList.add('folder-closed');
+                    contentDiv.classList.add('hidden');
+                    contentDiv.classList.remove('flex');
+                    header.classList.remove('folder-opened');
+                    header.classList.add('folder-closed');
                     header.style.backgroundColor = folderColor;
                     createMiniGrid();
                 } else {
@@ -384,9 +392,11 @@ function renderFolders() {
                         if (prevOpen) prevOpen.click(); 
                     }
                     openFolderId = item.id;
-                    contentDiv.classList.remove('hidden'); contentDiv.classList.add('flex');
-                    header.classList.remove('folder-closed'); header.classList.add('folder-opened');
-                    header.innerHTML = `<div class="text-white opacity-80 w-6 h-6"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 7H12L10 5H4C2.9 5 2.01 5.9 2.01 7L2 19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z"/></svg></div>`;
+                    contentDiv.classList.remove('hidden');
+                    contentDiv.classList.add('flex');
+                    header.classList.remove('folder-closed');
+                    header.classList.add('folder-opened');
+                    header.innerHTML = `<div class="text-white opacity-80"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 7H12L10 5H4C2.9 5 2.01 5.9 2.01 7L2 19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z"/></svg></div>`;
                     header.style.backgroundColor = 'rgba(88, 101, 242, 0.3)';
                 }
             };
@@ -412,7 +422,9 @@ async function loadGuilds() {
     guildDataMap.clear();
     res.data.forEach(s => guildDataMap.set(s.id, s));
     
-    if (guildFolders.length > 0) { renderFolders(); } else {
+    if (guildFolders.length > 0) {
+        renderFolders(); 
+    } else {
         const list = document.getElementById('guild-list');
         list.innerHTML = '';
         res.data.forEach(s => list.appendChild(createServerIconElement(s)));
@@ -422,6 +434,7 @@ async function loadGuilds() {
 async function loadDms() {
     if (!currentAccount) return;
     
+    // UI update
     document.querySelectorAll('.server-icon.active').forEach(e => e.classList.remove('active'));
     document.getElementById('dm-icon').classList.add('active');
     document.getElementById('guild-name').innerText = 'Direct Messages';
@@ -431,6 +444,7 @@ async function loadDms() {
     
     const list = document.getElementById('channel-list');
     list.innerHTML = '';
+    
     const dms = res.data.sort((a,b) => (b.last_message_id||0) - (a.last_message_id||0));
     
     dms.forEach(dm => {
@@ -481,21 +495,26 @@ async function loadChannels(g, element) {
         const icon = ch.type === 2 
             ? '<svg class="w-5 h-5 mr-1.5 opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zm-4 0a8.977 8.977 0 00-6.22 3.32l1.62 1.34C6.54 6.78 7.68 6 9 6c2.37 0 4.54 1.05 5.96 2.7l1.7-1.39A8.932 8.932 0 0010 3.23zM5.16 8.78L2.73 11.2a8.96 8.96 0 000 3.19l2.43 2.43 1.54-1.54-.78-.79c-.28-.56-.45-1.19-.45-1.87s.17-1.3.45-1.86l.78-.78-1.54-1.54z"></path></svg>' 
             : '<span class="text-xl mr-2 text-[var(--text-secondary)] opacity-70">#</span>';
+        
         div.innerHTML = `${icon}<span class="${ch.type===2?'':'font-medium'}">${ch.name}</span>`;
         if (ch.type !== 2) div.onclick = () => selectChannel(ch); 
         else div.classList.add('opacity-50', 'cursor-not-allowed');
+        
         list.appendChild(div);
     };
     
     (grouped['null'] || []).forEach(ch => renderChannelItem(ch));
+    
     channels.filter(i => i.type === 4).sort((x, y) => x.position - y.position).forEach(cat => {
         const h = document.createElement('div'); 
         h.className = 'px-2 pt-4 pb-1 text-xs font-bold uppercase text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer flex items-center select-none group'; 
         h.innerHTML = `<svg class="w-3 h-3 mr-1 category-arrow transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg> ${cat.name}`;
+        
         h.onclick = () => toggleCategory(cat.id, h);
         list.appendChild(h); 
         (grouped[cat.id] || []).forEach(ch => renderChannelItem(ch, cat.id));
     });
+    
     updatePingDots();
 }
 
@@ -515,8 +534,11 @@ async function selectChannel(ch) {
     currentChannel = ch;
     oldestMessageId = null;
     isLoadingMore = false;
-    cancelReply(); cancelAttachment();
-    delete pingCounts[ch.id]; updatePingDots();
+    
+    cancelReply();
+    cancelAttachment();
+    delete pingCounts[ch.id];
+    updatePingDots();
     
     document.querySelectorAll('.channel-item.active').forEach(e => e.classList.remove('active'));
     const cE = document.getElementById(`channel-${ch.id}`);
@@ -532,7 +554,12 @@ async function selectChannel(ch) {
     const container = document.getElementById('message-container');
     container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><div class="loader"></div></div>';
     handleInput(); 
-    if (ch.guild_id) { checkTimeoutStatus(ch.guild_id); } else { setInputState(true); }
+    
+    if (ch.guild_id) {
+        checkTimeoutStatus(ch.guild_id);
+    } else {
+        setInputState(true);
+    }
     
     const res = await apiRequest(currentAccount.token, `/channels/${ch.id}/messages?limit=50`);
     container.innerHTML = '';
@@ -547,13 +574,17 @@ async function selectChannel(ch) {
     if (msgs.length > 0) {
         oldestMessageId = msgs[msgs.length - 1].id;
         const fragment = document.createDocumentFragment();
+        
         const arr = msgs.slice().reverse();
         for (let i = 0; i < arr.length; i++) {
              const m = arr[i];
              const prev = (i > 0) ? arr[i-1] : null;
+             
              if (plugins.messageLogger) messageStore[m.id] = m;
+             
              const isGrouped = prev && (prev.author.id === m.author.id) 
-                && !m.referenced_message && !m.webhook_id && !prev.webhook_id 
+                && !m.referenced_message 
+                && !m.webhook_id && !prev.webhook_id 
                 && (new Date(m.timestamp) - new Date(prev.timestamp) < 5 * 60 * 1000);
              
              const el = createMessageElement(m, isGrouped);
@@ -565,28 +596,20 @@ async function selectChannel(ch) {
     }
 }
 
-// script.js の createMessageElement 関数をこれに置き換える
-
 function createMessageElement(m, isGrouped) {
-    // ---------------------------------------------------------
-    // 1. テキストコンテンツの整形 (既存処理)
-    // ---------------------------------------------------------
     let contentHtml = parseMarkdown(m.content);
     
-    // メンション
     if (m.mentions) {
         m.mentions.forEach(u => { 
             const name = u.global_name || u.username;
             contentHtml = contentHtml.replace(new RegExp(`<@!?${u.id}>`, 'g'), `<span class="mention">@${name}</span>`);
         });
     }
-    
-    // スタンプ
+
     if (m.sticker_items) {
         contentHtml += m.sticker_items.map(s => `<img src="https://media.discordapp.net/stickers/${s.id}.webp?size=160" class="w-32 h-32 mt-2 block"/>`).join('');
     }
     
-    // 添付ファイル
     if (m.attachments?.length > 0) {
         m.attachments.forEach(a => {
             const isImg = a.content_type?.startsWith('image/');
@@ -600,148 +623,118 @@ function createMessageElement(m, isGrouped) {
             }
         });
     }
-    
-    // Embeds
+
     if (m.embeds?.length > 0) contentHtml += m.embeds.map(renderEmbed).join('');
 
-    // 履歴
-    let historyHtml = '';
-    if(plugins.messageLogger && editedMessages[m.id]) {
-        historyHtml = editedMessages[m.id];
-    }
-    const editedTag = m.edited_timestamp ? '<span class="edited-tag">(edited)</span>' : '';
-
-    // ---------------------------------------------------------
-    // 2. メッセージの親要素作成
-    // ---------------------------------------------------------
     const el = document.createElement('div'); 
     el.id = `message-${m.id}`; 
-    // CSSクラス 'message-group' は Flexbox の方向設定を持たせないためCSS側も修正します
-    el.className = `message-group ${isGrouped ? 'grouped' : ''} hover:bg-[var(--message-hover)] transition-colors relative`;
+    el.className = `message-group px-4 pr-4 w-full flex flex-col ${isGrouped ? 'grouped' : ''}`;
     el.dataset.authorId = m.author.id;
+
     if (plugins.clickAction) el.addEventListener('dblclick', () => startReply(m));
     if (m.isSending) el.classList.add('message-sending');
     if (m.isFailed) el.classList.add('message-failed');
 
-    // ---------------------------------------------------------
-    // 3. ツールバーと自分自身の操作ボタン
-    // ---------------------------------------------------------
-    const isMe = currentAccount && m.author.id === currentAccount.id;
-    const delBtn = isMe ? `<button onclick="deleteMessage('${m.id}', event)" class="p-1 hover:bg-[var(--bg-primary)] rounded text-red-500 transition-colors" title="削除"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
-    const editBtn = isMe ? `<button onclick="startEdit('${m.id}')" class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)] transition-colors" title="編集"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>` : '';
-    const replyBtn = `<button onclick='startReply(${JSON.stringify({id:m.id, author:m.author})})' class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)] transition-colors" title="返信"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></button>`;
-    
-    // ツールバー (position: absoluteで右上に配置)
-    const toolbar = `<div class="message-toolbar absolute -top-2 right-4 rounded shadow-md bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center p-0.5 z-10 transition-all opacity-0 group-hover:opacity-100">${replyBtn}${editBtn}${delBtn}</div>`;
+    let historyHtml = '';
+    if(plugins.messageLogger && editedMessages[m.id]) {
+        historyHtml = editedMessages[m.id];
+    }
 
-    // ---------------------------------------------------------
-    // 4. 左カラム(アバター/時刻) と 右カラム(中身) の構築
-    // ---------------------------------------------------------
+    const isMe = currentAccount && m.author.id === currentAccount.id;
     
-    // 【A】返信バー (Referenced Message) - 通常メッセージの上部に表示
-    let refHtml = '';
-    if (m.referenced_message && !isGrouped) {
-        const rm = m.referenced_message;
-        const refName = rm.author ? (rm.author.global_name || rm.author.username) : "Unknown";
-        const refAv = rm.author && rm.author.avatar ? `https://cdn.discordapp.com/avatars/${rm.author.id}/${rm.author.avatar}.png?size=16` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-        refHtml = `
-        <div class="flex items-center gap-2 ml-[58px] mb-1 opacity-60 text-sm cursor-pointer hover:opacity-100 relative select-none" onclick="scrollToMessage('${rm.id}')">
-            <div class="reply-spine absolute -left-[20px] top-1/2 w-[34px] border-l-2 border-t-2 border-[var(--reply-spine-color)] h-3 rounded-tl-md border-b-0 pointer-events-none"></div>
-            <img src="${refAv}" class="w-4 h-4 rounded-full bg-gray-500 object-cover"> 
-            <span class="font-bold mr-1 whitespace-nowrap overflow-hidden text-[var(--text-primary)] text-xs">@${refName}</span> 
-            <span class="text-[var(--text-secondary)] truncate text-xs font-normal">${rm.content || 'クリックして移動'}</span>
+    const delBtn = isMe ? `<button onclick="deleteMessage('${m.id}', event)" class="p-1 hover:bg-[var(--bg-primary)] rounded text-red-500"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
+    const editBtn = isMe ? `<button onclick="startEdit('${m.id}')" class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)]"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>` : '';
+    const replyBtn = `<button onclick='startReply(${JSON.stringify({id:m.id, author:m.author})})' class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)]"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></button>`;
+
+    const toolbar = `<div class="message-toolbar absolute -top-4 right-4 rounded shadow-sm bg-[var(--bg-secondary)] flex items-center p-0.5 z-20">${editBtn}${delBtn}${replyBtn}</div>`;
+
+    let headerAddon = '';
+    let nameStyle = m.member?.color ? `style="color:#${m.member.color.toString(16).padStart(6,'0')}"` : '';
+
+    if (m.deleted && plugins.messageLogger) {
+         headerAddon += '<span class="text-red-500 text-[10px] font-bold mr-1">[DELETED]</span>';
+    }
+    
+    // Grouped (Simplified, left-aligned correctly via flex)
+    if (isGrouped) {
+        const editedTag = m.edited_timestamp ? '<span class="edited-tag">(edited)</span>' : '';
+        // Align text with the non-grouped version. Non-grouped has 40px avatar + 16px mr = 56px offset visually.
+        // We simulate this by simple left padding/margin on text
+        el.innerHTML = `
+            ${toolbar}
+            <div class="pl-[56px] w-full message-content-text relative">
+                ${historyHtml}${contentHtml}${editedTag}
+            </div>`;
+    } 
+    else {
+        const member = m.member || {}; 
+        const name = member.nick || m.author.global_name || m.author.username;
+        const avUrl = member.avatar 
+            ? `https://cdn.discordapp.com/guilds/${currentChannel.guild_id}/users/${m.author.id}/avatars/${member.avatar}.png?size=64` 
+            : (m.author.avatar 
+                ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64` 
+                : `https://cdn.discordapp.com/embed/avatars/${m.author.discriminator%5}.png`);
+        
+        let decoHtml = '';
+        if (m.author.avatar_decoration_data) { 
+             const decoUrl = `https://cdn.discordapp.com/avatar-decoration-presets/${m.author.avatar_decoration_data.asset}.png?size=96`; 
+             decoHtml = `<img src="${decoUrl}" class="avatar-decoration">`; 
+        }
+
+        const date = new Date(m.timestamp);
+        const timeStr = plugins.sendSeconds ? date.toLocaleTimeString() : date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        
+        const usernameDisp = plugins.showMeYourName ? `<span class="ml-1 text-[0.8em] font-medium text-[var(--text-secondary)] opacity-70">@${m.author.username}</span>` : '';
+        const botTag = m.author.bot ? `<span class="ml-1.5 bg-[#5865F2] text-white text-[0.625rem] px-1.5 rounded-[0.1875rem] py-[1px] font-medium align-middle">BOT</span>` : '';
+
+        // Reference
+        let refHtml = '';
+        if (m.referenced_message) {
+            const rm = m.referenced_message;
+            const refName = rm.author ? (rm.author.global_name || rm.author.username) : "Unknown";
+            const refAv = rm.author && rm.author.avatar 
+                ? `https://cdn.discordapp.com/avatars/${rm.author.id}/${rm.author.avatar}.png?size=16` 
+                : 'https://cdn.discordapp.com/embed/avatars/0.png';
+            
+            refHtml = `<div class="flex items-center gap-1 ml-[52px] mb-1 opacity-70 text-sm cursor-pointer hover:opacity-100 relative" onclick="scrollToMessage('${rm.id}')">
+                <div class="reply-spine"></div>
+                <img src="${refAv}" class="w-4 h-4 rounded-full"> 
+                <span class="font-bold mr-1 text-[var(--text-primary)] whitespace-nowrap overflow-hidden">${refName}</span> 
+                <span class="text-[var(--text-secondary)] truncate">${rm.content || '添付ファイル'}</span>
+            </div>`;
+        }
+
+        const editedTag = m.edited_timestamp ? '<span class="edited-tag">(edited)</span>' : '';
+
+        // Structure: Header -> (Row: Avatar | (HeaderName+Date, Content))
+        el.innerHTML = `
+        ${refHtml}
+        ${toolbar} 
+        <div class="flex mt-0.5 items-start"> 
+            <div class="avatar-container mr-4 cursor-pointer active:translate-y-[1px]">
+                <img src="${avUrl}" class="avatar-img shadow-sm hover:shadow-md transition-shadow rounded-full">${decoHtml}
+            </div> 
+            <div class="flex-1 min-w-0"> 
+                <div class="flex items-center leading-[1.375rem]"> 
+                    ${headerAddon} 
+                    <span class="font-medium mr-1 cursor-pointer hover:underline" ${nameStyle}>${name}</span> 
+                    ${usernameDisp}${botTag} 
+                    <span class="ml-2 text-[0.75rem] text-[var(--text-secondary)] cursor-default">${timeStr}</span> 
+                </div> 
+                <div class="message-content-text whitespace-pre-wrap leading-[1.375rem] relative">
+                    ${historyHtml}${contentHtml}${editedTag}
+                </div> 
+            </div> 
         </div>`;
     }
 
-    // 左側のHTML生成
-    let leftColumnHtml = '';
-    // ヘッダー（名前・時間）生成
-    let headerHtml = '';
-
-    const member = m.member || {};
-    // 表示用の時刻計算
-    const date = new Date(m.timestamp);
-    const fullTimeStr = plugins.sendSeconds ? date.toLocaleTimeString() : date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-    if (isGrouped) {
-        // --- グループ化されている場合 ---
-        // 左カラム: ホバー時にのみ表示される小さい時刻
-        const shortTime = date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        leftColumnHtml = `<div class="text-[10px] text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 w-full h-full flex items-center justify-center pt-1 select-none font-mono">${shortTime}</div>`;
-    } else {
-        // --- 通常メッセージの場合 ---
-        const name = member.nick || m.author.global_name || m.author.username;
-        const avUrl = member.avatar ? `https://cdn.discordapp.com/guilds/${currentChannel.guild_id}/users/${m.author.id}/avatars/${member.avatar}.png?size=64` : (m.author.avatar ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${m.author.discriminator%5}.png`);
-        
-        let decoHtml = '';
-        if (m.author.avatar_decoration_data) {
-             const decoUrl = `https://cdn.discordapp.com/avatar-decoration-presets/${m.author.avatar_decoration_data.asset}.png?size=96`;
-             decoHtml = `<img src="${decoUrl}" class="avatar-decoration pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%]">`;
-        }
-
-        // 左カラム: アバター画像
-        leftColumnHtml = `
-            <div class="relative w-10 h-10 mt-[2px] cursor-pointer hover:drop-shadow-sm active:translate-y-[1px] transition-transform" onclick="/* プロフィール表示などの処理があれば */">
-                <img src="${avUrl}" class="w-full h-full rounded-full object-cover relative z-10 bg-gray-500">
-                ${decoHtml}
-            </div>`;
-
-        // ヘッダー情報 (右カラムの上部)
-        let nameStyle = m.member?.color ? `style="color:#${m.member.color.toString(16).padStart(6,'0')}"` : '';
-        const botTag = m.author.bot ? `<span class="ml-1 bg-[#5865F2] text-white text-[0.625rem] px-1.5 rounded-[0.2rem] py-[1px] font-medium align-middle inline-flex items-center gap-0.5"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>BOT</span>` : '';
-        const usernameDisp = plugins.showMeYourName ? `<span class="ml-1 text-[0.75rem] font-medium text-[var(--text-secondary)] opacity-70">(${m.author.username})</span>` : '';
-
-        // [DELETED] タグ
-        let deleteTag = '';
-        if (m.deleted && plugins.messageLogger) {
-            deleteTag = '<span class="text-red-500 text-[10px] font-bold mr-1 uppercase tracking-wide border border-red-500 px-1 rounded">[Deleted]</span>';
-        }
-
-        headerHtml = `
-            <div class="flex items-center leading-5 min-w-0">
-                ${deleteTag}
-                <span class="font-medium mr-1 cursor-pointer hover:underline text-[1rem]" ${nameStyle}>${name}</span>
-                ${usernameDisp}${botTag}
-                <span class="ml-2 text-[0.7rem] text-[var(--text-secondary)] cursor-default mt-0.5">${fullTimeStr}</span>
-            </div>
-        `;
+    if (m.deleted && plugins.messageLogger) {
+         const contentDiv = el.querySelector('.message-content-text');
+         if(contentDiv) contentDiv.classList.add('deleted-text');
     }
 
-    // ---------------------------------------------------------
-    // 5. 最終的なHTML組立
-    // ---------------------------------------------------------
-    
-    // レイアウトの肝: すべての行を "左カラム(48px固定) + 右カラム(Flex-1)" で構成する
-    // これによりパディング計算ミスによるズレを防ぎます。
-    
-    el.innerHTML = `
-        ${isGrouped ? '' : refHtml}
-        ${toolbar}
-        <div class="flex items-start pl-4 pr-4 py-0.5 group w-full min-w-0">
-            <!-- 左カラム: 幅48px (Avatar size 40px + Margin 8px or similar) -->
-            <div class="flex-shrink-0 w-[48px] mr-3 select-none flex justify-center">
-                ${leftColumnHtml}
-            </div>
-
-            <!-- 右カラム -->
-            <div class="flex-1 min-w-0 overflow-hidden relative">
-                ${headerHtml}
-                <div class="message-content-text whitespace-pre-wrap break-words leading-[1.375rem] text-[0.95rem] ${m.deleted ? 'text-red-400' : 'text-[var(--text-primary)]'}">
-                    ${historyHtml}
-                    ${contentHtml}
-                    ${editedTag}
-                </div>
-            </div>
-        </div>
-    `;
-
-    // 削除されたメッセージの場合、コンテンツにスタイルを追加
-    const contentTextDiv = el.querySelector('.message-content-text');
-    if(contentTextDiv) {
-        if(m.deleted) contentTextDiv.style.color = '#a0a0a0';
-        // 編集機能のために生のテキストを保持
-        contentTextDiv.dataset.originalContent = m.content;
-    }
+    const contentText = el.querySelector('.message-content-text');
+    if(contentText) contentText.dataset.originalContent = m.content;
     
     return el;
 }
@@ -754,17 +747,24 @@ async function sendMessage() {
 
     const tempId = `temp-${Date.now()}`;
     const fakeMsg = { 
-        id: tempId, author: currentAccount, content: content, timestamp: new Date().toISOString(), isSending: true 
+        id: tempId, 
+        author: currentAccount, 
+        content: content, 
+        timestamp: new Date().toISOString(), 
+        isSending: true 
     };
     if (attachedFile) fakeMsg.attachments = [{ filename: attachedFile.name, url: '#' }];
     
     renderMsg(fakeMsg);
     
-    input.value = ''; handleInput();
+    input.value = ''; 
+    handleInput();
     const container = document.getElementById('message-container');
     container.scrollTop = container.scrollHeight; 
 
-    let body; let isForm = false;
+    let body; 
+    let isForm = false;
+    
     const replyRef = replyingTo ? { message_id: replyingTo.messageId } : undefined;
 
     if (attachedFile) { 
@@ -778,11 +778,13 @@ async function sendMessage() {
 
     const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages`, 'POST', body, isForm);
     if (!res.error) {
-         cancelAttachment(); cancelReply();
+         cancelAttachment(); 
+         cancelReply();
     } else {
          const el = document.getElementById(`message-${tempId}`);
          if(el) {
-             el.classList.remove('message-sending'); el.classList.add('message-failed');
+             el.classList.remove('message-sending'); 
+             el.classList.add('message-failed');
          }
          renderClydeError('送信失敗: ' + (res.error.message || 'Unknown Error'));
     }
@@ -793,7 +795,9 @@ function handleInput() {
     const s = document.getElementById('send-button');
     const ctr = document.getElementById('char-counter');
     
-    i.style.height = 'auto'; i.style.height = (i.scrollHeight) + 'px';
+    i.style.height = 'auto'; 
+    i.style.height = (i.scrollHeight) + 'px';
+    
     const len = i.value.length;
     
     s.disabled = (i.value.trim() === '' && !attachedFile);
@@ -820,12 +824,15 @@ function connectWS() {
         if (d.op === 10) { 
             heartbeatInterval = setInterval(()=>ws.send(JSON.stringify({op: 1, d: lastSequence})), d.d.heartbeat_interval); 
             ws.send(JSON.stringify({ op: 2, d: { token: currentAccount.token, properties: { $os: "linux", $browser: "disco", $device: "disco" } } })); 
+        
         } else if (d.t === 'READY') {
              if (d.d.user_settings?.guild_folders) { 
                  guildFolders = d.d.user_settings.guild_folders; 
-                 // Force re-render folders if websocket brings fresh structure
-                 if (guildFolders.length > 0) renderFolders(); 
+                 if(document.getElementById('guild-list').children.length === 0 || guildFolders.length > 0) {
+                     renderFolders();
+                 }
              }
+        
         } else if (d.t === 'MESSAGE_CREATE') {
              if (d.d.channel_id === currentChannel?.id) { 
                 if (d.d.author.id === currentAccount.id) {
@@ -837,6 +844,7 @@ function connectWS() {
                  pingCounts[d.d.channel_id] = (pingCounts[d.d.channel_id]||0) + 1;
                  updatePingDots();
              }
+
         } else if (d.t === 'MESSAGE_UPDATE') {
              if (plugins.messageLogger && d.d.id) {
                  const old = messageStore[d.d.id];
@@ -850,6 +858,7 @@ function connectWS() {
                      rerenderMessage(d.d.id, combined);
                  }
              }
+
         } else if (d.t === 'MESSAGE_DELETE') {
              const id = d.d.id;
              if (messageStore[id] && plugins.messageLogger) {
@@ -862,7 +871,10 @@ function connectWS() {
              }
         }
     };
-    ws.onclose = () => { setTimeout(connectWS, 5000); };
+    
+    ws.onclose = () => {
+        setTimeout(connectWS, 5000); 
+    };
 }
 
 function renderMsg(m) {
@@ -927,13 +939,20 @@ async function deleteMessage(id, e) {
 function startEdit(id) { 
     const msgEl = document.getElementById(`message-${id}`); 
     if (!msgEl) return; 
+    
     const contentEl = msgEl.querySelector('.message-content-text'); 
     if (!contentEl) return; 
+    
     const original = contentEl.dataset.originalContent || "";
     
-    contentEl.innerHTML = `<textarea class="input-field w-full p-2 bg-[var(--bg-tertiary)] rounded outline-none h-auto border border-blue-500 font-sans" rows="3">${original}</textarea><div class="text-xs mt-1 text-[var(--text-link)] opacity-80">Enterで保存 - Escでキャンセル</div>`; 
+    contentEl.innerHTML = `
+        <textarea class="input-field w-full p-2 bg-[var(--bg-tertiary)] rounded outline-none h-auto border border-blue-500 font-sans" rows="3">${original}</textarea>
+        <div class="text-xs mt-1 text-[var(--text-link)] opacity-80">Enterで保存 - Escでキャンセル</div>
+    `; 
+    
     const t = contentEl.querySelector('textarea'); 
     t.focus(); 
+    
     t.onkeydown = async (e) => { 
         if(e.key==='Enter' && !e.shiftKey) { 
             e.preventDefault(); 
@@ -947,7 +966,8 @@ function startEdit(id) {
 function startReply(m) { 
     replyingTo = { messageId: m.id, author: m.author }; 
     const bar = document.getElementById('reply-bar');
-    bar.classList.remove('hidden'); bar.classList.add('flex'); 
+    bar.classList.remove('hidden'); 
+    bar.classList.add('flex'); 
     document.getElementById('reply-username').innerText = m.author.global_name || m.author.username; 
     document.getElementById('message-input').focus(); 
 }
@@ -955,14 +975,16 @@ function startReply(m) {
 function cancelReply() { 
     replyingTo = null; 
     const bar = document.getElementById('reply-bar');
-    bar.classList.remove('flex'); bar.classList.add('hidden'); 
+    bar.classList.remove('flex'); 
+    bar.classList.add('hidden'); 
 }
 
 function cancelAttachment() {
     attachedFile = null;
     document.getElementById('file-input').value = "";
     const preview = document.getElementById('attachment-preview-bar');
-    preview.classList.remove('flex'); preview.classList.add('hidden');
+    preview.classList.remove('flex');
+    preview.classList.add('hidden');
     handleInput();
 }
 
@@ -977,11 +999,18 @@ function scrollToMessage(id) {
 
 function parseMarkdown(t) { 
     if (!t) return ''; 
-    return t.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-[var(--text-link)] hover:underline">$1</a>'); 
+    return t
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>')
+        .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-[var(--text-link)] hover:underline">$1</a>'); 
 }
 
 function renderEmbed(e) { 
-    return `<div style="border-left:4px solid ${e.color ? '#' + e.color.toString(16).padStart(6,'0') : '#ccc'};" class="bg-[var(--bg-tertiary)] p-3 rounded mt-1 max-w-xl text-sm break-words">${e.title ? `<b class="block mb-1">${e.title}</b>` : ''}${e.description ? `<span>${parseMarkdown(e.description)}</span>` : ''}</div>`; 
+    return `<div style="border-left:4px solid ${e.color ? '#' + e.color.toString(16).padStart(6,'0') : '#ccc'};" class="bg-[var(--bg-tertiary)] p-3 rounded mt-1 max-w-xl text-sm break-words">
+        ${e.title ? `<b class="block mb-1">${e.title}</b>` : ''}
+        ${e.description ? `<span>${parseMarkdown(e.description)}</span>` : ''}
+    </div>`; 
 }
 
 function renderClydeError(t) { 
@@ -1025,6 +1054,7 @@ function renderSettingsModal() {
 function switchSettingsTab(tabName) {
     document.querySelectorAll('.settings-tab-item').forEach(e => e.classList.remove('active'));
     document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+    
     document.getElementById('tab-content-plugins').classList.add('hidden');
     document.getElementById('tab-content-general').classList.add('hidden');
     document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
