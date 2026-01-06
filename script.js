@@ -672,20 +672,16 @@ function createMessageElement(m, isGrouped) {
                     </div>
                 </div>
             </div>`;
-    } 
-    else {
+    } else {
         const member = m.member || {}; 
         const name = member.nick || m.author.global_name || m.author.username;
-        const avUrl = member.avatar 
-            ? `https://cdn.discordapp.com/guilds/${currentChannel.guild_id}/users/${m.author.id}/avatars/${member.avatar}.png?size=64` 
-            : (m.author.avatar 
-                ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64` 
-                : `https://cdn.discordapp.com/embed/avatars/${m.author.discriminator%5}.png`);
+        const avUrl = member.avatar ? `https://cdn.discordapp.com/guilds/${currentChannel.guild_id}/users/${m.author.id}/avatars/${member.avatar}.png?size=64` : (m.author.avatar ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${m.author.discriminator%5}.png`);
         
         let decoHtml = '';
         if (m.author.avatar_decoration_data) { 
              const decoUrl = `https://cdn.discordapp.com/avatar-decoration-presets/${m.author.avatar_decoration_data.asset}.png?size=96`; 
-             decoHtml = `<img src="${decoUrl}" class="avatar-decoration">`; 
+             // 修正点1: デコレーション画像のサイズを style で直接 % 指定し、ポインターイベントを無効化
+             decoHtml = `<img src="${decoUrl}" class="avatar-decoration" style="width: 120%; height: 120%; max-width: none;">`; 
         }
 
         const date = new Date(m.timestamp);
@@ -714,12 +710,13 @@ function createMessageElement(m, isGrouped) {
         const editedTag = m.edited_timestamp ? '<span class="edited-tag">(edited)</span>' : '';
 
         // Structure: Header -> (Row: Avatar | (HeaderName+Date, Content))
-        el.innerHTML = `
+       el.innerHTML = `
         ${refHtml}
         ${toolbar} 
-        <div class="flex mt-0.5 items-start"> 
-            <div class="avatar-container mr-4 cursor-pointer active:translate-y-[1px]">
-                <img src="${avUrl}" class="avatar-img shadow-sm hover:shadow-md transition-shadow rounded-full">${decoHtml}
+        <div class="flex mt-0.5 items-start w-full"> 
+            <div class="avatar-container mr-4 cursor-pointer relative shrink-0 w-10 h-10 active:translate-y-[1px]" style="width: 40px; height: 40px; min-width: 40px;">
+                <img src="${avUrl}" class="avatar-img shadow-sm hover:shadow-md transition-shadow rounded-full block w-full h-full object-cover relative z-10">
+                ${decoHtml}
             </div> 
             <div class="flex-1 min-w-0"> 
                 <div class="flex items-center leading-[1.375rem]"> 
