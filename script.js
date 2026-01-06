@@ -137,21 +137,44 @@ async function migrateOldData() {
 }
 
 async function addAccount(token, existingId = null) {
-    document.getElementById('login-error').innerText = "";
+    const errorEl = document.getElementById('login-error');
+    if (errorEl) errorEl.innerText = "";
+    
     if (!token || !token.trim()) return;
     token = token.trim().replace(/^"|"$/g, '');
-    const b = document.getElementById('add-account-button'), t = document.getElementById('add-account-button-text'), s = document.getElementById('login-spinner');
-    t.classList.add('hidden'); s.classList.remove('hidden'); b.disabled = true;
+    
+    const b = document.getElementById('add-account-button');
+    const t = document.getElementById('add-account-button-text');
+    const s = document.getElementById('login-spinner');
+    
+    // ボタンが存在する場合のみUIを操作
+    if (b && t && s) {
+        t.classList.add('hidden'); 
+        s.classList.remove('hidden'); 
+        b.disabled = true;
+    }
+
     const result = await apiRequest(token, '/users/@me');
-    t.classList.remove('hidden'); s.classList.add('hidden'); b.disabled = false;
+    
+    // 操作を戻す
+    if (b && t && s) {
+        t.classList.remove('hidden'); 
+        s.classList.add('hidden'); 
+        b.disabled = false;
+    }
+
     if (result.data && result.data.id) {
         let a = getAccounts(); 
-        if(existingId && existingId !== result.data.id) return document.getElementById('login-error').innerText = "別のアカウントのトークンです";
+        if(existingId && existingId !== result.data.id && errorEl) return errorEl.innerText = "別のアカウントのトークンです";
+        
         const idx = a.findIndex(acc => acc.id === result.data.id);
         const n = { ...result.data, token };
         if (idx > -1) a[idx] = n; else a.push(n);
-        saveAccounts(a); switchAccount(result.data.id);
-    } else { document.getElementById('login-error').innerText = `エラー: ${result.error?.message || '無効なトークン'}`; }
+        saveAccounts(a); 
+        switchAccount(result.data.id);
+    } else { 
+        if (errorEl) errorEl.innerText = `エラー: ${result.error?.message || '無効なトークン'}`; 
+    }
 }
 
 function switchAccount(id) {
