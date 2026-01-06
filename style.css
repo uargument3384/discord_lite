@@ -197,3 +197,32 @@ input:checked + .slider:before { transform: translateX(16px); }
 
 .plugin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--bg-quaternary); }
 .plugin-item:last-child { border-bottom: none; }
+
+/* 1. サーバーリスト（左側）の不要な横スクロールバーを完全に消去 */
+#sidebar-view > div:first-child {
+    overflow-x: hidden !important;
+    scrollbar-width: none; /* Firefox用 */
+}
+#sidebar-view > div:first-child::-webkit-scrollbar {
+    display: none; /* Chrome/Safari用 */
+}
+
+/* 2. ユーザーパネル（左下）のコンテナ設定 */
+/* デコレーションや画像がボックスからはみ出しても切れないようにする */
+#user-info-panel .relative {
+    overflow: visible !important;
+}
+
+/* 3. ユーザーパネル用のアバターデコレーション */
+/* JS側で class="user-panel-decoration" を付与した画像に適用されます */
+.user-panel-decoration {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 130% !important; /* プロフィール用にさらに大きく(130%)設定 */
+    height: 130% !important;
+    max-width: none !important; /* 親要素の幅制限を無視 */
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 20;
+}
