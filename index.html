@@ -14,12 +14,9 @@
                         discord: {
                             bg: '#313338',
                             sidebar: '#2b2d31',
-                            server: '#1e1f22',
-                            input: '#383a40',
-                            brand: '#5865f2',
-                            red: '#da373c',
-                            yellow: '#f0b232',
-                            hover: '#35373c'
+                            element: '#232428', 
+                            hover: '#35373c',
+                            active: '#3f4147'
                         }
                     }
                 }
@@ -28,167 +25,123 @@
     </script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="font-sans h-screen flex flex-col overflow-hidden bg-gray-100 dark:bg-[#313338] text-gray-900 dark:text-gray-100">
-    
-    <div id="settings-modal" class="hidden fixed inset-0 bg-black/50 z-[100] flex justify-center items-center backdrop-blur-sm">
-        <div class="bg-white dark:bg-[#313338] w-full max-w-3xl h-[85vh] rounded-lg shadow-2xl flex overflow-hidden">
-            <div class="w-1/3 bg-gray-100 dark:bg-[#2b2d31] flex flex-col border-r border-gray-200 dark:border-[#1f2023]">
-                <div class="p-4 font-bold text-xs uppercase text-gray-500 mt-4 mb-2 pl-6">Settings</div>
-                <div class="px-2 space-y-1">
-                    <div id="tab-btn-plugins" class="settings-tab-item active" onclick="switchSettingsTab('plugins')">Plugins</div>
-                    <div id="tab-btn-general" class="settings-tab-item" onclick="switchSettingsTab('general')">General</div>
-                </div>
-            </div>
-            <div class="flex-1 p-8 overflow-y-auto bg-white dark:bg-[#313338] relative">
-                <div class="absolute top-6 right-8 cursor-pointer text-gray-500 hover:text-gray-900 dark:hover:text-gray-100" onclick="document.getElementById('settings-modal').classList.add('hidden')">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </div>
-                
-                <div id="tab-content-plugins">
-                    <h2 class="text-2xl font-bold mb-6">Plugins</h2>
-                    <div id="plugin-list" class="space-y-4"></div>
-                </div>
+<body class="font-sans h-screen flex overflow-hidden bg-white dark:bg-[#313338] text-gray-900 dark:text-[#dbdee1] selection:bg-[#5865f2] selection:text-white">
 
-                <div id="tab-content-general" class="hidden">
-                    <h2 class="text-2xl font-bold mb-6">General</h2>
-                    <h3 class="text-sm font-bold uppercase text-gray-500 mb-4">THEME</h3>
-                    <div class="flex gap-4">
-                        <div class="theme-card bg-[#2b2d31]" onclick="setTheme('dark')">
-                            <div class="theme-card-check" id="theme-check-dark">
-                                <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-                            </div>
-                            <span class="text-white font-bold">Dark</span>
-                        </div>
-                        <div class="theme-card bg-white border border-gray-300" onclick="setTheme('light')">
-                            <div class="theme-card-check hidden" id="theme-check-light">
-                                <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-                            </div>
-                            <span class="text-black font-bold">Light</span>
-                        </div>
-                    </div>
+    <div id="auth-section" class="w-full h-full absolute z-[100] bg-gray-100 dark:bg-[#313338] flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-white dark:bg-[#2b2d31] p-8 rounded shadow-md">
+            <h1 class="text-2xl font-bold text-center mb-6">Discord Lite</h1>
+            <div id="account-selection-view" class="hidden w-full">
+                <div id="saved-accounts-list" class="space-y-2 mb-4 max-h-[300px] overflow-y-auto"></div>
+                <button id="show-token-form" class="w-full py-2 text-sm text-gray-500 hover:text-black dark:hover:text-white transition-colors">別のアカウントを追加</button>
+            </div>
+            <div id="token-input-view" class="w-full">
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">トークン</label>
+                    <input type="password" id="token-input" class="w-full p-2 rounded bg-gray-200 dark:bg-[#1e1f22] text-sm focus:outline-none focus:ring-2 focus:ring-[#5865f2] transition-shadow text-black dark:text-white">
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="auth-section" class="w-full max-w-md m-auto p-8 rounded-lg shadow-xl flex-col bg-white dark:bg-[#2b2d31] hidden relative z-50">
-        <div id="migration-view" class="hidden flex-col items-center justify-center mb-4">
-            <div class="loader mb-2"></div>
-            <div class="text-sm font-bold text-center">データ更新中...</div>
-        </div>
-        <div id="account-selection-view" class="hidden flex-col">
-            <h1 class="text-2xl font-bold text-center mb-6">おかえりなさい！</h1>
-            <div id="saved-accounts-list" class="space-y-2 mb-4 max-h-80 overflow-y-auto pr-1"></div>
-            <button type="button" id="show-add-account-form-btn" class="mt-2 text-sm text-gray-500 hover:underline text-center w-full">別のアカウントを追加</button>
-        </div>
-        <div id="token-input-view" class="hidden flex-col">
-            <h1 class="text-2xl font-bold text-center mb-2" id="auth-title">アカウントを追加</h1>
-            <div id="relogin-user-info" class="hidden flex-col items-center mb-4 p-4 bg-gray-100 dark:bg-[#1e1f22] rounded-lg">
-                <img id="relogin-avatar" src="" class="w-20 h-20 rounded-full mb-2 shadow-md">
-                <div id="relogin-name" class="font-bold text-lg"></div>
-                <div class="text-xs opacity-60">@<span id="relogin-username"></span></div>
-                <div class="text-red-500 font-bold text-sm mt-2 animate-pulse">再ログインが必要です</div>
-            </div>
-            <div id="login-error" class="text-red-500 text-xs mb-3 text-center"></div>
-            <form class="space-y-4" onsubmit="return false;">
-                <div class="text-xs text-gray-500 uppercase font-bold" id="token-label">トークン</div>
-                <input type="password" id="token-input" class="w-full p-2.5 rounded-md bg-gray-200 dark:bg-[#1e1f22] text-sm focus:outline-none" placeholder="MTE...">
-                <button type="button" id="add-account-button" class="bg-[#5865f2] hover:bg-[#4752c4] w-full py-3 rounded-md font-bold text-white flex justify-center items-center transition-colors">
-                    <span id="add-account-button-text">ログイン</span>
-                    <div id="login-spinner" class="loader hidden" style="width: 20px; height: 20px; border-width: 3px;"></div>
+                <button id="login-button" class="w-full bg-[#5865f2] hover:bg-[#4752c4] text-white font-bold py-2 rounded transition-colors flex justify-center">
+                    <span id="login-text">ログイン</span><div class="loader hidden"></div>
                 </button>
-                <button type="button" id="back-to-accounts-btn" class="text-sm text-gray-500 hover:underline w-full py-2">アカウント一覧に戻る</button>
-            </form>
+                <button id="back-to-list" class="hidden w-full py-2 text-sm text-gray-500 hover:underline mt-2">戻る</button>
+                <div id="login-error" class="text-red-500 text-xs mt-2 text-center h-4"></div>
+            </div>
         </div>
     </div>
 
-    <div id="main-app" class="hidden flex-1 flex-row min-h-0 relative">
-        <div id="sidebar-view" class="flex flex-row w-full h-full md:w-auto md:flex z-40">
-            <div class="p-3 flex flex-col items-center gap-2 overflow-y-auto flex-shrink-0 bg-gray-200 dark:bg-[#1e1f22] w-[72px]" id="server-rail">
-                <div id="dm-icon" title="DM" class="server-icon bg-[#5865f2] flex items-center justify-center cursor-pointer text-white font-black text-xl mb-1 hover:bg-[#4752c4] transition-all duration-200 shrink-0 relative z-20">DM</div>
-                <div class="w-8 h-[2px] rounded-lg bg-gray-300 dark:bg-[#2b2d31] my-1 shrink-0"></div>
-                <div id="guild-list" class="flex flex-col items-center gap-2 w-full pb-4"></div>
+    <div id="main-app" class="hidden flex-1 flex w-full h-full relative">
+        <div id="sidebar-view" class="flex w-full md:w-auto h-full z-10 bg-[#e3e5e8] dark:bg-[#1e1f22]">
+            <div id="server-rail" class="w-[72px] flex-shrink-0 flex flex-col items-center py-3 overflow-y-auto gap-[8px]">
+                <div id="dm-icon" class="server-icon bg-[#5865f2] hover:bg-[#5865f2] active">
+                    <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12C2 17.514 6.486 22 12 22C17.514 22 22 17.514 22 12C22 6.486 17.514 2 12 2ZM13.8437 13.9062H12.75V11.8516C12.75 11.2344 12.9258 10.7481 13.2773 10.3926C13.629 10.0332 14.3398 9.54492 15.4102 8.92773C15.6836 8.76758 15.9082 8.60938 16.084 8.45312C16.3262 8.24219 16.4824 8.01953 16.5527 7.78516C16.6231 7.54687 16.6582 7.2832 16.6582 6.99414C16.6582 6.37695 16.4356 5.86719 15.9902 5.46484C15.5489 5.0625 14.8809 4.86133 13.9863 4.86133C13.0645 4.86133 12.4336 5.10937 12.0938 5.60547C11.7539 6.10156 11.5586 6.92187 11.5078 8.06641H8.79492C8.8418 6.57422 9.21484 5.37891 9.91406 4.48047C10.8203 3.3125 12.1856 2.72852 14.0098 2.72852C15.9121 2.72852 17.3789 3.20313 18.4102 4.15234C19.4453 5.09766 19.9629 6.27539 19.9629 7.68555C19.9629 8.23633 19.8653 8.76172 19.6702 9.26172C19.4752 9.76172 19.2373 10.1558 18.957 10.4449C18.6817 10.7303 18.0673 11.1396 17.1143 11.6738C16.1429 12.2212 15.6521 12.6364 15.6425 12.9197V13.9062H13.8437ZM14.4414 19.166C13.8633 19.166 13.3887 18.9746 13.0176 18.5918C12.6465 18.2051 12.4609 17.7285 12.4609 17.1621C12.4609 16.5918 12.6465 16.1152 13.0176 15.7324C13.3926 15.3457 13.8672 15.1523 14.4414 15.1523C15.0234 15.1523 15.5 15.3457 15.8711 15.7324C16.2422 16.1152 16.4277 16.5918 16.4277 17.1621C16.4277 17.7285 16.2422 18.2051 15.8711 18.5918C15.5 18.9746 15.0234 19.166 14.4414 19.166Z" fill="currentColor"/></svg>
+                </div>
+                <div class="w-8 h-[2px] rounded bg-gray-300 dark:bg-[#35363c]"></div>
+                <div id="guild-list" class="w-full flex flex-col items-center gap-[8px] pb-4"></div>
             </div>
-            
-            <div class="w-full md:w-60 flex flex-col bg-gray-100 dark:bg-[#2b2d31] flex-1 min-h-0 relative border-l border-gray-300 dark:border-[#1f2023] md:border-none">
-                <div class="h-12 px-4 border-b border-gray-200 dark:border-[#1f2023] font-bold truncate flex items-center shadow-sm select-none" id="guild-name"></div>
-                <div id="channel-list" class="flex-1 overflow-y-auto p-2 space-y-[2px]"></div>
+
+            <div class="w-full md:w-60 flex flex-col bg-[#f2f3f5] dark:bg-[#2b2d31] rounded-tl-lg h-full border-l dark:border-[#1f2023] border-gray-300 md:border-none">
+                <div id="guild-header" class="h-12 border-b dark:border-[#1f2023] border-gray-300 px-4 flex items-center font-bold text-md truncate shadow-sm cursor-pointer hover:bg-[#ebedef] dark:hover:bg-[#35373c] transition-colors">
+                    <span id="guild-name-text">Discord Lite</span>
+                </div>
                 
-                <div class="relative flex-shrink-0 bg-gray-200 dark:bg-[#232428]">
-                    <div id="user-info-panel" class="px-2 py-1.5 flex items-center gap-2 h-[52px] cursor-pointer" onclick="document.getElementById('account-switcher').classList.toggle('hidden')">
-                        <div class="relative w-8 h-8 flex-shrink-0">
-                            <div id="current-user-avatar-container" class="w-full h-full relative pointer-events-none"></div>
-                        </div>
-                        <div class="flex-1 min-w-0 flex flex-col justify-center select-none pl-1">
-                             <div class="text-sm font-bold truncate leading-tight" id="current-user-name"></div>
-                             <div class="text-xs opacity-60 truncate leading-tight" id="current-user-subtext"></div>
-                        </div>
-                        <div class="flex items-center">
-                            <button id="open-settings-btn" class="p-2 hover:bg-gray-300 dark:hover:bg-[#3f4147] rounded-md cursor-pointer text-gray-600 dark:text-gray-300" title="ユーザー設定" onclick="event.stopPropagation(); renderSettingsModal();">
-                            </button>
+                <div id="channel-list" class="flex-1 overflow-y-auto p-2 scrollbar-hide"></div>
+                
+                <div class="h-[52px] bg-[#ebedef] dark:bg-[#232428] flex items-center px-2 py-1.5 gap-2 select-none relative z-30 flex-shrink-0">
+                    <div class="group relative flex items-center gap-2 rounded px-1 py-1 cursor-pointer hover:bg-gray-300 dark:hover:bg-[#3f4147] flex-1 min-w-0 transition-colors" onclick="document.getElementById('account-switcher').classList.toggle('hidden')">
+                        <div id="current-avatar" class="w-8 h-8 rounded-full bg-gray-500 overflow-hidden flex-shrink-0 relative"></div>
+                        <div class="flex-1 min-w-0">
+                            <div id="current-username" class="text-sm font-semibold truncate leading-tight">User</div>
+                            <div id="current-discriminator" class="text-xs opacity-60 truncate leading-tight">#0000</div>
                         </div>
                     </div>
-
-                    <div id="account-switcher" class="hidden absolute bottom-[105%] left-2 right-2 rounded-lg shadow-xl overflow-hidden z-50 bg-white dark:bg-[#111214] border border-gray-200 dark:border-[#1f2023]">
-                        <div id="account-list" class="max-h-60 overflow-y-auto p-1 space-y-0.5"></div>
-                        <div class="border-t border-gray-200 dark:border-[#1f2023] p-1 mt-1">
-                            <div id="add-account-switcher-btn" class="text-sm p-2 rounded cursor-pointer hover:bg-[#5865f2] hover:text-white flex items-center gap-2 transition-colors dark:text-gray-300">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                アカウントを追加
-                            </div>
+                    <button class="p-2 rounded hover:bg-gray-300 dark:hover:bg-[#3f4147] cursor-pointer" onclick="document.getElementById('settings-modal').classList.remove('hidden');renderPluginList();">
+                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg>
+                    </button>
+                    <div id="account-switcher" class="hidden absolute bottom-full left-0 w-full mb-2 bg-[#f8f9f9] dark:bg-[#111214] rounded shadow-lg p-2 border border-gray-200 dark:border-[#1e1f22]">
+                        <div id="account-list-dropdown" class="space-y-1 mb-2"></div>
+                        <div class="border-t border-gray-300 dark:border-[#1f2023] pt-2">
+                             <div class="p-2 text-sm rounded hover:bg-[#5865f2] hover:text-white cursor-pointer" onclick="cleanupState();updateView('auth');document.getElementById('token-input-view').classList.remove('hidden');document.getElementById('account-selection-view').classList.add('hidden');document.getElementById('account-switcher').classList.add('hidden');">アカウントを追加</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="chat-section" class="hidden flex-1 md:flex flex-col min-h-0 min-w-0 bg-white dark:bg-[#313338]">
-            <div class="h-12 px-4 border-b border-gray-200 dark:border-[#26272d] flex items-center justify-between flex-shrink-0 shadow-sm relative z-30">
-                <div class="font-bold flex items-center truncate">
-                    <button id="back-to-channels-btn" class="mr-3 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-[#3f4147] md:hidden">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                    <span id="channel-name-text"></span>
+        <div id="chat-section" class="hidden flex-1 md:flex flex-col min-w-0 bg-white dark:bg-[#313338] relative z-0">
+            <div class="h-12 border-b dark:border-[#26272d] border-gray-200 flex items-center px-4 shadow-sm flex-shrink-0">
+                <button id="back-to-list-mobile" class="mr-4 md:hidden text-gray-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <div class="font-bold flex items-center overflow-hidden">
+                    <span class="text-2xl mr-2 opacity-50 font-thin text-gray-400">#</span>
+                    <span id="header-channel-name" class="truncate">Select Channel</span>
                 </div>
             </div>
-            
-            <div id="message-container" class="flex-1 overflow-y-auto space-y-0 scroll-smooth relative z-0 pl-0"></div>
-            
-            <div class="flex-shrink-0 bg-white dark:bg-[#313338]">
-                <div id="attachment-preview-bar" class="hidden px-4 py-2 text-sm border-t border-gray-200 dark:border-[#26272d] items-center justify-between bg-gray-50 dark:bg-[#2b2d31]">
-                    <div class="flex items-center gap-2 font-mono"><span class="text-[#5865f2]">📎</span> <b id="attachment-preview-name"></b></div>
-                    <button id="cancel-attachment-btn" class="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-[#3f4147]">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                    </button>
-                </div>
-                
-                <div class="px-4 pb-6 pt-1">
-                    <div class="flex items-start gap-2 bg-gray-200 dark:bg-[#383a40] p-2 rounded-lg relative transition-all shadow-sm" style="min-height: 44px;">
-                        <input type="file" id="file-input" class="hidden" multiple>
-                        
-                        <button id="attach-button" class="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#313338] transition-colors mt-0.5 sticky top-0" title="ファイルを添付">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                        </button>
 
-                        <div class="relative w-full self-center">
-                            <div id="popup-picker" class="hidden absolute left-0 w-full rounded bg-white dark:bg-[#2b2d31] border border-gray-300 dark:border-[#1f2023] shadow-lg bottom-full mb-4 z-50"></div>
-                            
-                            <div id="reply-bar" class="hidden flex items-center justify-between text-xs text-gray-500 mb-1 px-1 opacity-90">
-                                 <span class="truncate">Replying to <b id="reply-username"></b></span>
-                                 <button id="cancel-reply-btn" class="p-0.5 rounded-full hover:text-gray-700 dark:hover:text-gray-300">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                                </button>
-                            </div>
-                            
-                            <textarea id="message-input" placeholder="メッセージを送信" class="w-full bg-transparent p-1.5 text-[0.95rem] resize-none max-h-[50vh] focus:outline-none min-h-[24px] text-gray-900 dark:text-gray-100" rows="1"></textarea>
-                            <div id="char-counter" class="absolute bottom-1 right-1 text-[10px] font-mono font-bold text-gray-500 opacity-0 pointer-events-none select-none"></div>
-                        </div>
-                        
-                        <button id="send-button" class="p-2 rounded-lg text-[#5865f2] hover:bg-gray-300 dark:hover:bg-[#313338] disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end" disabled>
-                            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(0deg);"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                        </button>
+            <div id="message-container" class="flex-1 overflow-y-auto px-0 pt-0 pb-4 relative"></div>
+
+            <div class="px-4 pb-6 flex-shrink-0 bg-white dark:bg-[#313338] z-20">
+                <div id="input-addons" class="hidden flex-col gap-1 border-t dark:border-[#26272d] bg-[#ebedef] dark:bg-[#2b2d31] rounded-t-lg px-4 py-2 text-sm mt-2">
+                    <div id="reply-bar" class="hidden flex items-center justify-between text-gray-500">
+                        <span>Replying to <b id="reply-to-name"></b></span>
+                        <span id="cancel-reply" class="cursor-pointer hover:text-black dark:hover:text-white text-xs font-bold">✕</span>
+                    </div>
+                    <div id="attachment-bar" class="hidden flex items-center justify-between text-gray-500">
+                         <div class="flex items-center gap-2"><span class="text-[#5865f2]">📎</span><span id="filename-preview"></span></div>
+                         <span id="cancel-attachment" class="cursor-pointer hover:text-black dark:hover:text-white text-xs font-bold">✕</span>
                     </div>
                 </div>
+                <div class="bg-[#ebedef] dark:bg-[#383a40] p-0 rounded-lg flex items-start relative mt-2">
+                    <input type="file" id="file-input" class="hidden" multiple>
+                    <button class="p-3 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200" onclick="document.getElementById('file-input').click()">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                    </button>
+                    <div class="flex-1 py-2.5 relative">
+                        <textarea id="message-input" rows="1" placeholder="メッセージを送信" class="w-full bg-transparent resize-none border-none outline-none text-base text-gray-900 dark:text-gray-100 pr-10 scrollbar-hide" style="max-height: 50vh;"></textarea>
+                        <div id="popup-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white dark:bg-[#2b2d31] shadow-xl rounded overflow-hidden z-50 max-h-40 overflow-y-auto border dark:border-[#1e1f22]"></div>
+                    </div>
+                    <div class="pr-3 py-2 text-[10px] font-mono absolute bottom-0 right-0 pointer-events-none opacity-50" id="char-counter"></div>
+                    <button id="send-button" class="p-3 text-[#5865f2] disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60">
+        <div class="w-full max-w-2xl h-[80vh] bg-white dark:bg-[#313338] rounded-lg shadow-2xl flex overflow-hidden">
+            <div class="w-48 bg-[#f2f3f5] dark:bg-[#2b2d31] p-0 pt-8 flex flex-col">
+                <div class="px-4 pb-2 text-xs font-bold text-gray-500">SETTINGS</div>
+                <div class="cursor-pointer px-4 py-2 hover:bg-gray-200 dark:hover:bg-[#3f4147] bg-gray-200 dark:bg-[#3f4147]">Plugins</div>
+                <div class="mt-auto p-4 cursor-pointer text-red-400 hover:text-red-500 text-sm font-bold" onclick="document.getElementById('settings-modal').classList.add('hidden')">Close</div>
+            </div>
+            <div class="flex-1 p-8 bg-white dark:bg-[#313338] overflow-y-auto">
+                <h2 class="text-xl font-bold mb-4">Plugins</h2>
+                <div id="plugin-list" class="space-y-4"></div>
+                <div class="h-px bg-gray-200 dark:bg-gray-700 my-6"></div>
+                <h2 class="text-xl font-bold mb-4">Theme</h2>
+                <button class="bg-[#2b2d31] text-white px-4 py-2 rounded mr-2" onclick="setTheme('dark')">Dark</button>
+                <button class="bg-white border border-gray-300 text-black px-4 py-2 rounded" onclick="setTheme('light')">Light</button>
             </div>
         </div>
     </div>
