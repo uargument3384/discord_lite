@@ -23,10 +23,151 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Base Reset & Variables */
+        :root {
+            --primary-color: #5865f2;
+            --text-link: #00b0f4;
+            --mention-bg: rgba(88, 101, 242, 0.1);
+            --bg-modifier-selected: rgba(128, 128, 128, 0.16);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background-color: #2b2d31; }
+        ::-webkit-scrollbar-thumb { background-color: #1a1b1e; border-radius: 4px; }
+        html:not(.dark) ::-webkit-scrollbar-track { background-color: #f2f3f5; }
+        html:not(.dark) ::-webkit-scrollbar-thumb { background-color: #c4c9ce; }
+
+        /* Hide Scrollbar for Server Rail */
+        #server-rail {
+            overflow-x: hidden !important;
+            scrollbar-width: none;
+        }
+        #server-rail::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Server Icons */
+        .server-icon {
+            width: 48px; height: 48px; min-height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: border-radius 0.2s, background-color 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            background-color: #313338;
+            color: #dbdee1;
+            overflow: hidden; /* アイコンを枠内に収める */
+        }
+        html:not(.dark) .server-icon { background-color: #e3e5e8; color: #060607; }
+
+        .server-icon:hover, .server-icon.active { border-radius: 16px; background-color: #5865f2; color: white; }
+        .server-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; transition: border-radius 0.2s; }
+        
+        /* Pill indicator */
+        .server-icon.active::before {
+            content: ''; position: absolute; left: -14px; top: 10px; height: 28px; width: 8px;
+            background-color: white; border-radius: 0 4px 4px 0;
+            html:not(.dark) & { background-color: #060607; }
+        }
+
+        /* Folder Styles */
+        .folder-closed {
+            width: 48px; height: 48px; border-radius: 24px;
+            background-color: rgba(88, 101, 242, 0.25); cursor: pointer;
+            display: flex; flex-wrap: wrap; padding: 10px; gap: 4px;
+            justify-content: center; align-content: center;
+            transition: border-radius 0.2s, background-color 0.2s;
+        }
+        .folder-closed:hover { border-radius: 16px; background-color: #5865f2; }
+        .folder-icon-thumb { width: 10px; height: 10px; border-radius: 50%; object-fit: cover; }
+        .server-icon.in-folder::after {
+            content: ''; position: absolute; inset: 0; background-color: rgba(0,0,0,0.1); pointer-events: none;
+        }
+
+        /* Channel Item */
+        .channel-item {
+            border-radius: 4px; 
+            color: #949ba4; 
+            margin-bottom: 2px;
+        }
+        html:not(.dark) .channel-item { color: #5c5e66; }
+        .channel-item:hover { background-color: var(--bg-modifier-selected); color: #dbdee1; }
+        .channel-item.active { background-color: rgba(79, 84, 92, 0.48); color: white; }
+        html:not(.dark) .channel-item.active { background-color: rgba(116, 127, 141, 0.2); color: #060607; }
+
+        /* Ping Dot */
+        .ping-dot {
+            position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px;
+            background-color: #ed4245; border-radius: 50%; 
+            border: 3px solid #2b2d31; z-index: 10; pointer-events: none;
+        }
+        html:not(.dark) .ping-dot { border-color: #f2f3f5; }
+
+        /* Message Styles */
+        .message-group { position: relative; width: 100%; margin-top: 1.0625rem; }
+        .message-group.grouped { margin-top: 2px; }
+        .message-group:hover { background-color: rgba(4, 4, 5, 0.07); }
+        .message-toolbar { 
+            opacity: 0; pointer-events: none; transform: translateY(-4px); transition: all 0.1s;
+            background-color: #313338; border: 1px solid #1f2023;
+        }
+        html:not(.dark) .message-toolbar { background-color: white; border: 1px solid #ccc; }
+        .message-group:hover .message-toolbar { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        
+        .mention {
+            background-color: rgba(88, 101, 242, 0.3); color: #c9cdfb;
+            padding: 0 2px; border-radius: 3px; font-weight: 500; cursor: pointer; transition: 0.1s;
+        }
+        html:not(.dark) .mention { background-color: rgba(88, 101, 242, 0.1); color: #5865f2; }
+        .mention:hover { background-color: #5865f2; color: white; }
+        
+        .mention-highlight {
+            background-color: rgba(250, 166, 26, 0.1);
+            position: relative;
+        }
+        .mention-highlight::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+            background-color: #faa61a;
+        }
+
+        .reply-spine {
+            position: absolute; top: 12px; left: -24px; width: 34px; height: 10px;
+            border-left: 2px solid #4e5058; border-top: 2px solid #4e5058;
+            border-top-left-radius: 6px; pointer-events: none;
+        }
+        html:not(.dark) .reply-spine { border-color: #c4c9ce; }
+
+        /* Flash Animation */
+        @keyframes flash-anim { 0%,20%{background-color: rgba(250, 166, 26, 0.2);} 100%{background-color: transparent;} }
+        .flash-highlight { animation: flash-anim 1s ease-out; }
+
+        /* DELETED Message Specifics */
+        .deleted-text { color: #da373c; margin-left: 4px; font-size: 0.75rem; font-weight: bold; }
+        .deleted-img { filter: grayscale(100%); opacity: 0.6; transition: 0.2s; }
+        .deleted-img:hover { filter: grayscale(0%); opacity: 1; }
+
+        /* Switch */
+        .switch { position: relative; width: 40px; height: 24px; display: inline-block; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #80848e; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3ba55c; }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        /* Simple Loading Spinner */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #5865f2;
+            border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite;
+        }
+        html:not(.dark) .loader { border-color: rgba(0,0,0,0.1); border-top-color: #5865f2; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 <body class="font-sans h-screen flex overflow-hidden bg-white dark:bg-[#313338] text-gray-900 dark:text-[#dbdee1] selection:bg-[#5865f2] selection:text-white">
 
+    <!-- Auth / Login -->
     <div id="auth-section" class="w-full h-full absolute z-[100] bg-gray-100 dark:bg-[#313338] flex flex-col items-center justify-center p-4">
         <div class="w-full max-w-sm bg-white dark:bg-[#2b2d31] p-8 rounded shadow-md">
             <h1 class="text-2xl font-bold text-center mb-6">Discord Lite</h1>
@@ -48,8 +189,12 @@
         </div>
     </div>
 
+    <!-- Main App -->
     <div id="main-app" class="hidden flex-1 flex w-full h-full relative">
+        
+        <!-- Sidebar -->
         <div id="sidebar-view" class="flex w-full md:w-auto h-full z-10 bg-[#e3e5e8] dark:bg-[#1e1f22]">
+            <!-- Server Rail -->
             <div id="server-rail" class="w-[72px] flex-shrink-0 flex flex-col items-center py-3 overflow-y-auto gap-[8px]">
                 <div id="dm-icon" class="server-icon bg-[#5865f2] hover:bg-[#5865f2] active">
                     <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12C2 17.514 6.486 22 12 22C17.514 22 22 17.514 22 12C22 6.486 17.514 2 12 2ZM13.8437 13.9062H12.75V11.8516C12.75 11.2344 12.9258 10.7481 13.2773 10.3926C13.629 10.0332 14.3398 9.54492 15.4102 8.92773C15.6836 8.76758 15.9082 8.60938 16.084 8.45312C16.3262 8.24219 16.4824 8.01953 16.5527 7.78516C16.6231 7.54687 16.6582 7.2832 16.6582 6.99414C16.6582 6.37695 16.4356 5.86719 15.9902 5.46484C15.5489 5.0625 14.8809 4.86133 13.9863 4.86133C13.0645 4.86133 12.4336 5.10937 12.0938 5.60547C11.7539 6.10156 11.5586 6.92187 11.5078 8.06641H8.79492C8.8418 6.57422 9.21484 5.37891 9.91406 4.48047C10.8203 3.3125 12.1856 2.72852 14.0098 2.72852C15.9121 2.72852 17.3789 3.20313 18.4102 4.15234C19.4453 5.09766 19.9629 6.27539 19.9629 7.68555C19.9629 8.23633 19.8653 8.76172 19.6702 9.26172C19.4752 9.76172 19.2373 10.1558 18.957 10.4449C18.6817 10.7303 18.0673 11.1396 17.1143 11.6738C16.1429 12.2212 15.6521 12.6364 15.6425 12.9197V13.9062H13.8437ZM14.4414 19.166C13.8633 19.166 13.3887 18.9746 13.0176 18.5918C12.6465 18.2051 12.4609 17.7285 12.4609 17.1621C12.4609 16.5918 12.6465 16.1152 13.0176 15.7324C13.3926 15.3457 13.8672 15.1523 14.4414 15.1523C15.0234 15.1523 15.5 15.3457 15.8711 15.7324C16.2422 16.1152 16.4277 16.5918 16.4277 17.1621C16.4277 17.7285 16.2422 18.2051 15.8711 18.5918C15.5 18.9746 15.0234 19.166 14.4414 19.166Z" fill="currentColor"/></svg>
@@ -58,6 +203,7 @@
                 <div id="guild-list" class="w-full flex flex-col items-center gap-[8px] pb-4"></div>
             </div>
 
+            <!-- Sidebar (Channel List) -->
             <div class="w-full md:w-60 flex flex-col bg-[#f2f3f5] dark:bg-[#2b2d31] rounded-tl-lg h-full border-l dark:border-[#1f2023] border-gray-300 md:border-none">
                 <div id="guild-header" class="h-12 border-b dark:border-[#1f2023] border-gray-300 px-4 flex items-center font-bold text-md truncate shadow-sm cursor-pointer hover:bg-[#ebedef] dark:hover:bg-[#35373c] transition-colors">
                     <span id="guild-name-text">Discord Lite</span>
@@ -65,9 +211,12 @@
                 
                 <div id="channel-list" class="flex-1 overflow-y-auto p-2 scrollbar-hide"></div>
                 
+                <!-- User Panel -->
                 <div class="h-[52px] bg-[#ebedef] dark:bg-[#232428] flex items-center px-2 py-1.5 gap-2 select-none relative z-30 flex-shrink-0">
                     <div class="group relative flex items-center gap-2 rounded px-1 py-1 cursor-pointer hover:bg-gray-300 dark:hover:bg-[#3f4147] flex-1 min-w-0 transition-colors" onclick="document.getElementById('account-switcher').classList.toggle('hidden')">
-                        <div id="current-avatar" class="w-8 h-8 rounded-full bg-gray-500 overflow-hidden flex-shrink-0 relative"></div>
+                        <div id="current-avatar" class="w-8 h-8 rounded-full bg-gray-500 overflow-hidden flex-shrink-0 relative">
+                             <!-- Profile img will be injected here without weird sizing -->
+                        </div>
                         <div class="flex-1 min-w-0">
                             <div id="current-username" class="text-sm font-semibold truncate leading-tight">User</div>
                             <div id="current-discriminator" class="text-xs opacity-60 truncate leading-tight">#0000</div>
@@ -76,6 +225,7 @@
                     <button class="p-2 rounded hover:bg-gray-300 dark:hover:bg-[#3f4147] cursor-pointer" onclick="document.getElementById('settings-modal').classList.remove('hidden');renderPluginList();">
                         <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg>
                     </button>
+
                     <div id="account-switcher" class="hidden absolute bottom-full left-0 w-full mb-2 bg-[#f8f9f9] dark:bg-[#111214] rounded shadow-lg p-2 border border-gray-200 dark:border-[#1e1f22]">
                         <div id="account-list-dropdown" class="space-y-1 mb-2"></div>
                         <div class="border-t border-gray-300 dark:border-[#1f2023] pt-2">
@@ -86,6 +236,7 @@
             </div>
         </div>
 
+        <!-- Chat Section -->
         <div id="chat-section" class="hidden flex-1 md:flex flex-col min-w-0 bg-white dark:bg-[#313338] relative z-0">
             <div class="h-12 border-b dark:border-[#26272d] border-gray-200 flex items-center px-4 shadow-sm flex-shrink-0">
                 <button id="back-to-list-mobile" class="mr-4 md:hidden text-gray-500">
@@ -97,9 +248,16 @@
                 </div>
             </div>
 
+            <!-- 
+                 【修正】 scroll-smooth を削除しました。 
+                 チャンネルロード時はパッと切り替わり、必要なスクロールのみJSで制御します。
+            -->
             <div id="message-container" class="flex-1 overflow-y-auto px-0 pt-0 pb-4 relative"></div>
 
+            <!-- Input Area -->
             <div class="px-4 pb-6 flex-shrink-0 bg-white dark:bg-[#313338] z-20">
+                
+                <!-- Preview / Reply Bar -->
                 <div id="input-addons" class="hidden flex-col gap-1 border-t dark:border-[#26272d] bg-[#ebedef] dark:bg-[#2b2d31] rounded-t-lg px-4 py-2 text-sm mt-2">
                     <div id="reply-bar" class="hidden flex items-center justify-between text-gray-500">
                         <span>Replying to <b id="reply-to-name"></b></span>
@@ -110,6 +268,7 @@
                          <span id="cancel-attachment" class="cursor-pointer hover:text-black dark:hover:text-white text-xs font-bold">✕</span>
                     </div>
                 </div>
+
                 <div class="bg-[#ebedef] dark:bg-[#383a40] p-0 rounded-lg flex items-start relative mt-2">
                     <input type="file" id="file-input" class="hidden" multiple>
                     <button class="p-3 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200" onclick="document.getElementById('file-input').click()">
@@ -117,6 +276,7 @@
                     </button>
                     <div class="flex-1 py-2.5 relative">
                         <textarea id="message-input" rows="1" placeholder="メッセージを送信" class="w-full bg-transparent resize-none border-none outline-none text-base text-gray-900 dark:text-gray-100 pr-10 scrollbar-hide" style="max-height: 50vh;"></textarea>
+                        <!-- Popup -->
                         <div id="popup-menu" class="hidden absolute bottom-full mb-2 left-0 w-64 bg-white dark:bg-[#2b2d31] shadow-xl rounded overflow-hidden z-50 max-h-40 overflow-y-auto border dark:border-[#1e1f22]"></div>
                     </div>
                     <div class="pr-3 py-2 text-[10px] font-mono absolute bottom-0 right-0 pointer-events-none opacity-50" id="char-counter"></div>
@@ -128,6 +288,7 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
     <div id="settings-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60">
         <div class="w-full max-w-2xl h-[80vh] bg-white dark:bg-[#313338] rounded-lg shadow-2xl flex overflow-hidden">
             <div class="w-48 bg-[#f2f3f5] dark:bg-[#2b2d31] p-0 pt-8 flex flex-col">
@@ -145,6 +306,630 @@
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        // -- Core Variables --
+        const API_BASE = 'https://discord.com/api/v10';
+        let currentAccount = null;
+        let ws = null;
+        let heartbeatInterval = null;
+        let currentChannel = null;
+        let lastSequence = null;
+        
+        // Chat State
+        let messageStore = {};
+        let oldestMessageId = null;
+        let isLoadingMore = false;
+        let attachedFile = null;
+        let replyingTo = null;
+        
+        // Data Cache
+        let guildDataMap = new Map();
+        let guildFolders = []; // WebSocket READY data
+
+        const plugins = JSON.parse(localStorage.getItem('plugins')) || {
+            showMeYourName: false,
+            sendSeconds: false,
+            messageLogger: true,
+            clickAction: true
+        };
+
+        // -- Initialization --
+        document.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.theme === 'dark' || !localStorage.theme) document.documentElement.classList.add('dark');
+            const accs = JSON.parse(localStorage.getItem('accounts')) || [];
+            const active = localStorage.getItem('activeAccountId');
+
+            // Render Accounts in login view
+            const list = document.getElementById('saved-accounts-list');
+            if(accs.length) {
+                document.getElementById('account-selection-view').classList.remove('hidden');
+                document.getElementById('token-input-view').classList.add('hidden');
+                accs.forEach(a => {
+                    const row = document.createElement('div'); row.className='flex items-center p-3 border dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-[#2b2d31] cursor-pointer';
+                    const av = a.avatar?`https://cdn.discordapp.com/avatars/${a.id}/${a.avatar}.png?size=64`:`https://cdn.discordapp.com/embed/avatars/${a.discriminator%5}.png`;
+                    row.innerHTML = `<img src="${av}" class="w-10 h-10 rounded-full mr-3"><div><div class="font-bold">${a.username}</div></div>`;
+                    row.onclick = () => login(a.id);
+                    list.appendChild(row);
+                });
+            } else {
+                document.getElementById('token-input-view').classList.remove('hidden');
+            }
+            
+            if(accs.length && active) login(active);
+
+            // Bindings
+            document.getElementById('show-token-form').onclick = () => {
+                document.getElementById('account-selection-view').classList.add('hidden');
+                document.getElementById('token-input-view').classList.remove('hidden');
+                document.getElementById('back-to-list').classList.remove('hidden');
+            };
+            document.getElementById('back-to-list').onclick = () => {
+                document.getElementById('account-selection-view').classList.remove('hidden');
+                document.getElementById('token-input-view').classList.add('hidden');
+            }
+            document.getElementById('login-button').onclick = async () => {
+                const t = document.getElementById('token-input').value.trim();
+                if(!t) return;
+                const r = await fetch(API_BASE+'/users/@me', {headers:{Authorization:t}});
+                if(r.ok) {
+                    const u = await r.json();
+                    const newAcc = {...u, token: t};
+                    const stored = JSON.parse(localStorage.getItem('accounts'))||[];
+                    const idx = stored.findIndex(x=>x.id===u.id);
+                    if(idx>-1) stored[idx]=newAcc; else stored.push(newAcc);
+                    localStorage.setItem('accounts', JSON.stringify(stored));
+                    login(u.id);
+                } else {
+                    document.getElementById('login-error').innerText = "無効なトークンです";
+                }
+            };
+            
+            // App Events
+            document.getElementById('message-input').onkeydown = e => { if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } handleInput(); };
+            document.getElementById('message-input').oninput = handleInput;
+            document.getElementById('send-button').onclick = sendMessage;
+            document.getElementById('dm-icon').onclick = loadDMs;
+            document.getElementById('cancel-reply').onclick = () => { replyingTo=null; document.getElementById('input-addons').classList.remove('flex'); document.getElementById('input-addons').classList.add('hidden'); document.getElementById('reply-bar').classList.add('hidden'); };
+            document.getElementById('cancel-attachment').onclick = () => { attachedFile=null; document.getElementById('input-addons').classList.remove('flex'); document.getElementById('input-addons').classList.add('hidden'); document.getElementById('attachment-bar').classList.add('hidden'); };
+            document.getElementById('file-input').onchange = e => { if(e.target.files[0]) setFile(e.target.files[0]); };
+            document.getElementById('message-container').addEventListener('scroll', loadMore);
+            
+            // Mobile
+            document.getElementById('back-to-list-mobile').onclick = () => {
+                 document.getElementById('sidebar-view').classList.remove('hidden');
+                 document.getElementById('chat-section').classList.add('hidden');
+            };
+        });
+
+        // -- Logic --
+
+        function login(id) {
+            const accs = JSON.parse(localStorage.getItem('accounts'));
+            currentAccount = accs.find(a=>a.id===id);
+            if(!currentAccount) return;
+            localStorage.setItem('activeAccountId', id);
+            
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            
+            renderUserPanel();
+            loadGuilds();
+            connectGateway();
+        }
+        
+        function cleanupState() {
+            if(ws) ws.close();
+            currentChannel = null;
+            document.getElementById('message-container').innerHTML = '';
+        }
+
+        async function api(path, method='GET', body=null) {
+            const h = { Authorization: currentAccount.token };
+            if(body && !(body instanceof FormData)) { h['Content-Type']='application/json'; body=JSON.stringify(body); }
+            const r = await fetch(API_BASE+path, {method, headers:h, body});
+            return r.ok ? (r.status===204?true:r.json()) : null;
+        }
+
+        // Folders & Guilds
+        async function loadGuilds() {
+            // First load from API
+            const data = await api('/users/@me/guilds');
+            if(!data) return;
+            guildDataMap.clear();
+            data.forEach(g => guildDataMap.set(g.id, g));
+            
+            // Wait a moment for WS READY to give us folder structure, if not render flat
+            // For now, render flat initially
+            renderGuildList();
+        }
+
+        function renderGuildList() {
+            const el = document.getElementById('guild-list');
+            el.innerHTML = '';
+            
+            if (guildFolders.length > 0) {
+                // Use folder structure
+                guildFolders.forEach(folder => {
+                    if (folder.guild_ids.length === 0) return;
+                    
+                    // Folder Item
+                    if (folder.id) {
+                        const folderWrap = document.createElement('div');
+                        folderWrap.className = 'w-full flex flex-col items-center gap-[8px]';
+                        
+                        const head = document.createElement('div');
+                        head.className = 'folder-closed';
+                        const ids = folder.guild_ids;
+                        const validGuilds = ids.map(id => guildDataMap.get(id)).filter(Boolean);
+
+                        // Mini grid preview
+                        validGuilds.slice(0, 4).forEach(g => {
+                            const icon = document.createElement('img');
+                            icon.className = 'folder-icon-thumb';
+                            icon.src = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/0.png`;
+                            head.appendChild(icon);
+                        });
+
+                        const content = document.createElement('div');
+                        content.className = 'hidden flex-col items-center gap-[8px] mt-[8px] mb-[4px]';
+
+                        validGuilds.forEach(g => {
+                            const icon = createServerIcon(g);
+                            icon.classList.add('in-folder');
+                            content.appendChild(icon);
+                        });
+
+                        head.onclick = () => {
+                            const isOpen = !content.classList.contains('hidden');
+                            if(isOpen) {
+                                content.classList.add('hidden'); content.classList.remove('flex');
+                                head.style.backgroundColor = '';
+                                head.innerHTML = ''; // restore thumbs
+                                validGuilds.slice(0, 4).forEach(g => {
+                                    const i = document.createElement('img'); i.className = 'folder-icon-thumb'; i.src = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/0.png`; head.appendChild(i);
+                                });
+                            } else {
+                                content.classList.remove('hidden'); content.classList.add('flex');
+                                head.style.backgroundColor = 'transparent';
+                                head.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" class="text-gray-500"><path fill="currentColor" d="M20 7H12L10 5H4C2.9 5 2.01 5.9 2.01 7L2 19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z"/></svg>`;
+                            }
+                        };
+                        folderWrap.appendChild(head);
+                        folderWrap.appendChild(content);
+                        el.appendChild(folderWrap);
+                    } 
+                    // Flat Guild in Folder List (No Folder)
+                    else {
+                        folder.guild_ids.forEach(gid => {
+                            const g = guildDataMap.get(gid);
+                            if(g) el.appendChild(createServerIcon(g));
+                        });
+                    }
+                });
+            } else {
+                // Flat Fallback
+                guildDataMap.forEach(g => el.appendChild(createServerIcon(g)));
+            }
+        }
+
+        function createServerIcon(g) {
+            const d = document.createElement('div');
+            d.className = 'server-icon group';
+            // アイコンマージン削減 (CSS側で調整済み、親のgap依存)
+            const iconUrl = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=128` : null;
+            if(iconUrl) d.innerHTML = `<img src="${iconUrl}">`;
+            else d.innerHTML = `<span class="text-xs font-bold">${g.name.substring(0,2)}</span>`;
+            d.onclick = () => loadChannels(g, d);
+            d.title = g.name;
+            return d;
+        }
+
+        async function loadChannels(g, el) {
+            document.querySelectorAll('.server-icon.active').forEach(e => e.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('guild-header').innerHTML = `<span class="font-bold truncate">${g.name}</span>`;
+            
+            const channels = await api(`/guilds/${g.id}/channels`);
+            if(!channels) return;
+            const list = document.getElementById('channel-list');
+            list.innerHTML = '';
+            
+            const grouped = {};
+            channels.forEach(c => { const p = c.parent_id || 'null'; if(!grouped[p]) grouped[p]=[]; grouped[p].push(c); });
+            
+            // Render non-category first (rare)
+            if(grouped['null']) {
+                grouped['null'].sort((a,b)=>a.position-b.position).forEach(c => list.appendChild(createChannelItem(c)));
+            }
+
+            // Categories
+            const cats = channels.filter(c => c.type === 4).sort((a,b)=>a.position-b.position);
+            cats.forEach(cat => {
+                const head = document.createElement('div');
+                head.className = "flex items-center text-xs font-bold text-gray-500 hover:text-gray-300 cursor-pointer mt-4 mb-1 px-1 select-none uppercase";
+                head.innerHTML = `<svg class="category-arrow w-3 h-3 mr-0.5 transition-transform" viewBox="0 0 24 24"><path fill="currentColor" d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg>${cat.name}`;
+                list.appendChild(head);
+                
+                const groupContainer = document.createElement('div');
+                const children = grouped[cat.id] || [];
+                children.sort((a,b)=>a.position-b.position).forEach(c => groupContainer.appendChild(createChannelItem(c)));
+                list.appendChild(groupContainer);
+
+                head.onclick = () => {
+                    head.classList.toggle('category-collapsed');
+                    groupContainer.classList.toggle('hidden');
+                };
+            });
+        }
+
+        function createChannelItem(c) {
+            const d = document.createElement('div');
+            // 0:Text, 2:Voice, 5:News
+            if (![0,2,5].includes(c.type)) return document.createElement('span'); 
+            d.className = `channel-item px-2 py-1 mx-2 flex items-center cursor-pointer text-md select-none ${c.type===2?'opacity-60':''}`;
+            d.id = `chan-${c.id}`;
+            const icon = c.type===2 ? 
+                '<svg class="w-5 h-5 mr-1.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>' : 
+                '<svg class="w-5 h-5 mr-1.5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.88657 21C5.57547 21 5.3399 20.7189 5.39427 20.4126L6.00001 17H2.59511C2.28449 17 2.04905 16.7198 2.10259 16.4138L2.27759 15.4138C2.31946 15.1746 2.52722 15 2.77011 15H6.35001L7.41001 9H4.00511C3.69449 9 3.45905 8.71977 3.51259 8.41381L3.68759 7.41381C3.72946 7.17456 3.93722 7 4.18011 7H7.76001L8.39657 3.41262C8.45094 3.10635 8.68651 2.82518 8.99761 2.82518H10.6126C10.9069 2.82518 11.1342 3.07663 11.0826 3.36706L10.4501 7H14.86L15.4966 3.41262C15.551 3.10635 15.7866 2.82518 16.0976 2.82518H17.7126C18.0069 2.82518 18.2342 3.07663 18.1826 3.36706L17.5501 7H20.7949C21.1055 7 21.341 7.28023 21.2874 7.58619L21.1124 8.58619C21.0706 8.82544 20.8628 9 20.6199 9H17.1901L16.1301 15H19.5349C19.8455 15 20.081 15.2802 20.0274 15.5862L19.8524 16.5862C19.8106 16.8254 19.6028 17 19.3599 17H15.7801L15.1435 20.5874C15.0891 20.8937 14.8535 21 14.5424 21H12.9274C12.6331 21 12.4058 20.7485 12.4574 20.4582L13.0901 17H8.68001L8.04344 20.5874C7.98906 20.8937 7.7535 21 7.4424 21H5.88657ZM8.86001 15H13.2701L14.3301 9H9.92001L8.86001 15Z"></path></svg>';
+            d.innerHTML = `${icon}<span class="truncate">${c.name}</span>`;
+            if(c.type !== 2) d.onclick = () => enterChannel(c);
+            return d;
+        }
+
+        async function loadDMs() {
+            document.querySelectorAll('.server-icon.active').forEach(e => e.classList.remove('active'));
+            document.getElementById('dm-icon').classList.add('active');
+            document.getElementById('guild-header').innerHTML = 'Direct Messages';
+            
+            const list = document.getElementById('channel-list');
+            list.innerHTML = '';
+
+            const dms = await api('/users/@me/channels');
+            if(dms) {
+                dms.sort((a,b)=>(b.last_message_id||0)-(a.last_message_id||0)).forEach(dm => {
+                    const u = dm.recipients[0];
+                    if(!u) return;
+                    const d = document.createElement('div');
+                    d.className = 'channel-item px-2 py-2 mx-2 flex items-center cursor-pointer gap-3';
+                    const av = u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=32` : `https://cdn.discordapp.com/embed/avatars/${u.discriminator%5}.png`;
+                    d.innerHTML = `<img src="${av}" class="w-8 h-8 rounded-full"> <span class="truncate font-semibold">${u.username}</span>`;
+                    d.onclick = () => enterChannel(dm);
+                    list.appendChild(d);
+                });
+            }
+        }
+
+        async function enterChannel(c) {
+            currentChannel = c;
+            // Update UI
+            document.querySelectorAll('.channel-item').forEach(e=>e.classList.remove('active'));
+            if(document.getElementById(`chan-${c.id}`)) document.getElementById(`chan-${c.id}`).classList.add('active');
+            
+            document.getElementById('header-channel-name').innerText = c.name || (c.recipients?c.recipients[0].username:"Channel");
+            
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar-view').classList.add('hidden');
+                document.getElementById('chat-section').classList.remove('hidden');
+            }
+
+            const con = document.getElementById('message-container');
+            con.innerHTML = '';
+            // Reset loader flag to ensure new load is clean
+            oldestMessageId = null;
+
+            // Fetch
+            const msgs = await api(`/channels/${c.id}/messages?limit=50`);
+            if(msgs && msgs.length) {
+                oldestMessageId = msgs[msgs.length-1].id;
+                renderBatch(msgs.reverse());
+                // Immediate Scroll Down without smoothing (fixing the jump glitch)
+                con.scrollTop = con.scrollHeight;
+            }
+        }
+
+        async function loadMore() {
+            const con = document.getElementById('message-container');
+            if(con.scrollTop === 0 && oldestMessageId && !isLoadingMore) {
+                isLoadingMore = true;
+                const prevH = con.scrollHeight;
+                const msgs = await api(`/channels/${currentChannel.id}/messages?limit=50&before=${oldestMessageId}`);
+                if(msgs && msgs.length) {
+                    oldestMessageId = msgs[msgs.length-1].id;
+                    renderBatch(msgs.reverse(), true);
+                    con.scrollTop = con.scrollHeight - prevH;
+                } else oldestMessageId = null;
+                isLoadingMore = false;
+            }
+        }
+
+        function renderBatch(msgs, prepend=false) {
+            const con = document.getElementById('message-container');
+            const frag = document.createDocumentFragment();
+            let lastId = null, lastTime = 0;
+            
+            // Re-calc grouping logic locally for batch (imperfect if prepending but ok)
+            msgs.forEach((m, i) => {
+                let grouped = false;
+                if(i > 0 && lastId === m.author.id && !m.referenced_message && (new Date(m.timestamp) - lastTime < 300000)) grouped = true;
+                
+                // For renderBatch used in PREPEND, we need checking against first child if possible? 
+                // Simplified: Just use batch logic
+                const el = createMsgEl(m, grouped);
+                frag.appendChild(el);
+                
+                lastId = m.author.id;
+                lastTime = new Date(m.timestamp).getTime();
+            });
+
+            if(prepend) con.prepend(frag);
+            else con.appendChild(frag);
+        }
+
+        function createMsgEl(m, grouped) {
+            // Processing Content
+            let html = parseContent(m.content);
+            
+            // Deleted Logic: red (deleted) at the end of content
+            if(m.deleted_content) { 
+                // Restore old content for visual but append text
+                 html = parseContent(m.deleted_content); // Assume we stored it before
+                 // If not stored, Discord API usually doesn't give content of deleted msg unless cached.
+                 // We will handle via logger logic.
+            }
+
+            // Append date to name?
+            const date = new Date(m.timestamp);
+            const timeShort = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // Header Construction
+            const isMe = currentAccount && m.author.id === currentAccount.id;
+            
+            // Construct Attachments
+            let attachHTML = '';
+            if(m.attachments && m.attachments.length) {
+                m.attachments.forEach(a => {
+                    const cl = m.deleted ? 'deleted-img' : '';
+                    if(a.content_type?.startsWith('image')) {
+                        attachHTML += `<div class="mt-1"><a href="${a.url}" target="_blank"><img src="${a.url}" class="max-w-[320px] max-h-[320px] rounded object-contain ${cl}"></a></div>`;
+                    } else {
+                        attachHTML += `<div class="mt-1 p-3 bg-[#2b2d31] border border-[#26272d] rounded w-fit flex gap-2"><div class="text-[#5865f2] text-xl">📄</div><a href="${a.url}" target="_blank" class="text-[#00b0f4] hover:underline">${a.filename}</a></div>`;
+                    }
+                });
+            }
+
+            // Msg Container
+            const div = document.createElement('div');
+            div.id = `msg-${m.id}`;
+            div.className = `message-group px-4 ${grouped ? 'grouped' : ''} hover:bg-black/5 dark:hover:bg-white/5 pr-2`;
+            if (m.mentions && m.mentions.find(u => u.id === currentAccount.id)) div.classList.add('mention-highlight');
+
+            // Toolbar
+            const tool = document.createElement('div');
+            tool.className = "message-toolbar absolute right-4 -top-2 rounded flex shadow-sm z-10 px-1";
+            tool.innerHTML = `<div class="p-1 hover:bg-gray-200 dark:hover:bg-[#404249] cursor-pointer rounded text-gray-400 hover:text-gray-200" onclick="replyMsg('${m.id}','${m.author.username}')"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></div>
+            ${isMe ? `<div class="p-1 hover:bg-gray-200 dark:hover:bg-[#404249] cursor-pointer rounded text-red-400 hover:text-red-500" onclick="delMsg('${m.id}')"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></div>` : ''}`;
+            
+            // Build Inner
+            if(grouped) {
+                div.innerHTML = `<div class="flex relative"><div class="w-[50px] text-[10px] text-gray-500 text-right mr-3 mt-1.5 opacity-0 group-hover:opacity-100 select-none">${timeShort}</div><div class="flex-1 w-full overflow-hidden"><div class="message-content text-[#dbdee1] leading-6">${html} ${m.edited_timestamp?'<span class="text-[10px] text-gray-500">(edited)</span>':''} ${m.deleted ? '<span class="deleted-text">(deleted)</span>':''}</div>${attachHTML}</div></div>`;
+                div.prepend(tool);
+            } else {
+                const nick = m.member?.nick || m.author.global_name || m.author.username;
+                const av = m.member?.avatar ? `https://cdn.discordapp.com/guilds/${currentChannel.guild_id}/users/${m.author.id}/avatars/${m.member.avatar}.png?size=64` : (m.author.avatar?`https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64`:`https://cdn.discordapp.com/embed/avatars/${m.author.discriminator%5}.png`);
+                
+                // Avatar Decoration (Normalized: Just remove oversized styles and put it on top)
+                let deco = '';
+                if(m.author.avatar_decoration_data) {
+                    deco = `<img src="https://cdn.discordapp.com/avatar-decoration-presets/${m.author.avatar_decoration_data.asset}.png?size=96" class="absolute top-0 left-0 w-full h-full pointer-events-none z-20 scale-110">`;
+                }
+
+                // Reference
+                let refEl = '';
+                if(m.referenced_message) {
+                    const r = m.referenced_message;
+                    const rn = r.author?.global_name || r.author?.username || "Unknown";
+                    const ra = r.author?.avatar ? `https://cdn.discordapp.com/avatars/${r.author.id}/${r.author.avatar}.png?size=16` : `https://cdn.discordapp.com/embed/avatars/0.png`;
+                    refEl = `<div class="flex items-center ml-12 mb-1 opacity-60 text-xs hover:opacity-100 cursor-pointer relative" onclick="scrollToId('${r.id}')"><div class="reply-spine"></div><img src="${ra}" class="w-4 h-4 rounded-full mr-1 font-bold"> <span class="mr-1 font-bold text-gray-300">${rn}</span> <span class="truncate">${r.content||'Click to see'}</span></div>`;
+                }
+
+                div.innerHTML = `${refEl}<div class="flex relative mt-0.5"><div class="absolute left-0 w-10 h-10 cursor-pointer hover:shadow-lg active:translate-y-[1px] rounded-full bg-gray-600"><img src="${av}" class="w-full h-full rounded-full relative z-10">${deco}</div><div class="ml-12 w-full"><div class="flex items-center"><span class="font-medium text-white mr-2 cursor-pointer hover:underline" ${m.member?.color?`style="color:#${m.member.color.toString(16).padStart(6,'0')}"`:''}>${nick}</span><span class="text-xs text-gray-400">${plugins.sendSeconds ? date.toLocaleTimeString() : timeShort}</span></div><div class="message-content text-[#dbdee1] leading-6">${html} ${m.edited_timestamp?'<span class="text-[10px] text-gray-500">(edited)</span>':''} ${m.deleted ? '<span class="deleted-text">(deleted)</span>':''}</div>${attachHTML}</div></div>`;
+                div.prepend(tool);
+            }
+            return div;
+        }
+
+        function parseContent(txt) {
+            if(!txt) return '';
+            // Basic Escape
+            let d = txt.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            // Links
+            d = d.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-[#00b0f4] hover:underline">$1</a>');
+            // Bold
+            d = d.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            // Mention
+            d = d.replace(/&lt;@!?(\d+)&gt;/g, (m, id) => `<span class="mention">@${id}</span>`);
+            // NL
+            d = d.replace(/\n/g, '<br>');
+            return d;
+        }
+
+        // Actions
+        async function sendMessage() {
+            if(!currentChannel) return;
+            const ta = document.getElementById('message-input');
+            const txt = ta.value.trim();
+            if(!txt && !attachedFile) return;
+
+            const tempId = 'tmp-'+Date.now();
+            const now = new Date();
+            
+            // Create FormData or JSON
+            let body = { content: txt, tts: false };
+            if (replyingTo) body.message_reference = { message_id: replyingTo };
+            
+            const req = { method:'POST' };
+            
+            if (attachedFile) {
+                const fd = new FormData();
+                fd.append('payload_json', JSON.stringify(body));
+                fd.append('files[0]', attachedFile);
+                req.body = fd;
+                attachedFile = null; 
+                document.getElementById('input-addons').classList.add('hidden'); document.getElementById('input-addons').classList.remove('flex');
+                document.getElementById('attachment-bar').classList.add('hidden');
+            } else {
+                req.headers = { 'Content-Type': 'application/json' };
+                req.body = JSON.stringify(body);
+            }
+
+            req.headers = { ...req.headers, Authorization: currentAccount.token };
+
+            // Optimistic Render
+            renderBatch([{
+                id: tempId, author: currentAccount, content: txt, timestamp: now.toISOString(),
+                member: { avatar: currentAccount.avatar, color: null }, // simplistic
+                attachments: [] // cant preview blob easy in this structure without more code
+            }], false);
+            
+            // Immediate Scroll
+            const con = document.getElementById('message-container');
+            con.scrollTop = con.scrollHeight;
+
+            ta.value=''; handleInput();
+            
+            // Reset reply
+            replyingTo=null; document.getElementById('input-addons').classList.add('hidden'); document.getElementById('input-addons').classList.remove('flex');document.getElementById('reply-bar').classList.add('hidden');
+
+            // Send
+            const r = await fetch(API_BASE+`/channels/${currentChannel.id}/messages`, req);
+            if(r.ok) {
+                // Rely on WS to replace the message
+                // Or remove tempId logic if needed. 
+                // Currently just waiting for WS Message Create to appear at bottom
+                // The temp one stays until refreshed. In prod you replace.
+            }
+        }
+        
+        async function delMsg(id) {
+            if(confirm('削除しますか？')) await api(`/channels/${currentChannel.id}/messages/${id}`, 'DELETE');
+        }
+
+        function replyMsg(id, user) {
+            replyingTo = id;
+            document.getElementById('input-addons').classList.remove('hidden'); 
+            document.getElementById('input-addons').classList.add('flex');
+            document.getElementById('reply-bar').classList.remove('hidden');
+            document.getElementById('reply-bar').classList.add('flex');
+            document.getElementById('reply-to-name').innerText = user;
+            document.getElementById('message-input').focus();
+        }
+
+        function setFile(f) {
+            attachedFile = f;
+            document.getElementById('input-addons').classList.remove('hidden'); 
+            document.getElementById('input-addons').classList.add('flex');
+            document.getElementById('attachment-bar').classList.remove('hidden');
+            document.getElementById('attachment-bar').classList.add('flex');
+            document.getElementById('filename-preview').innerText = f.name;
+        }
+
+        function scrollToId(id) {
+            const el = document.getElementById(`msg-${id}`);
+            if(el) {
+                el.scrollIntoView({behavior:'smooth', block:'center'});
+                el.classList.add('flash-highlight');
+            }
+        }
+        
+        function handleInput() {
+            const t = document.getElementById('message-input');
+            t.style.height='auto'; t.style.height=t.scrollHeight+'px';
+            const b = document.getElementById('send-button');
+            b.disabled = (!t.value.trim().length && !attachedFile);
+        }
+
+        function connectGateway() {
+            ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
+            ws.onmessage = async (e) => {
+                const p = JSON.parse(e.data);
+                if(p.t === 'READY') {
+                    if(p.d.user_settings && p.d.user_settings.guild_folders) {
+                        guildFolders = p.d.user_settings.guild_folders;
+                        renderGuildList(); // Re-render with correct order/folders
+                    }
+                }
+                if(p.t === 'MESSAGE_CREATE') {
+                    if(p.d.channel_id === currentChannel?.id) {
+                        renderBatch([p.d], false);
+                        const con = document.getElementById('message-container');
+                        if (con.scrollHeight - con.scrollTop - con.clientHeight < 200) con.scrollTop = con.scrollHeight;
+                    }
+                }
+                if(p.t === 'MESSAGE_DELETE') {
+                    if(p.d.channel_id === currentChannel?.id) {
+                        if(plugins.messageLogger) {
+                            const div = document.getElementById(`msg-${p.d.id}`);
+                            if(div) {
+                                // Find content
+                                const c = div.querySelector('.message-content');
+                                if(c) {
+                                    if(!c.innerHTML.includes('deleted-text')) c.insertAdjacentHTML('beforeend', '<span class="deleted-text">(deleted)</span>');
+                                }
+                                div.querySelectorAll('img').forEach(i => {
+                                    if(!i.src.includes('avatar')) i.classList.add('deleted-img');
+                                });
+                            }
+                        } else {
+                            document.getElementById(`msg-${p.d.id}`)?.remove();
+                        }
+                    }
+                }
+                if(p.op === 10) {
+                    heartbeatInterval = setInterval(()=>ws.send(JSON.stringify({op:1, d:null})), p.d.heartbeat_interval);
+                    ws.send(JSON.stringify({
+                        op: 2,
+                        d: {
+                            token: currentAccount.token,
+                            properties: { os: "windows", browser: "chrome", device: "" }
+                        }
+                    }));
+                }
+            };
+        }
+
+        // Panel
+        function renderUserPanel() {
+            document.getElementById('current-username').innerText = currentAccount.username;
+            document.getElementById('current-discriminator').innerText = currentAccount.discriminator==='0'?'':('#'+currentAccount.discriminator);
+            
+            // Normalize sizing (Remove oversized/overflow css)
+            const av = currentAccount.avatar ? `https://cdn.discordapp.com/avatars/${currentAccount.id}/${currentAccount.avatar}.png?size=128` : `https://cdn.discordapp.com/embed/avatars/0.png`;
+            document.getElementById('current-avatar').innerHTML = `<img src="${av}" class="w-full h-full object-cover">`;
+            
+            // Acc Switcher Render
+            const accs = JSON.parse(localStorage.getItem('accounts'));
+            document.getElementById('account-list-dropdown').innerHTML = accs.map(a => `<div onclick="login('${a.id}');document.getElementById('account-switcher').classList.add('hidden')" class="p-2 flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-[#35373c] rounded cursor-pointer text-sm font-semibold"><img class="w-5 h-5 rounded-full" src="${a.avatar?`https://cdn.discordapp.com/avatars/${a.id}/${a.avatar}.png?size=32`:'https://cdn.discordapp.com/embed/avatars/0.png'}">${a.username}</div>`).join('');
+        }
+
+        function setTheme(m){
+            if(m==='dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', m);
+        }
+        function renderPluginList() {
+            const l = document.getElementById('plugin-list');
+            l.innerHTML = '';
+            Object.keys(plugins).forEach(k => {
+                const r = document.createElement('div');
+                r.className = 'flex items-center justify-between p-2';
+                r.innerHTML = `<span>${k}</span><label class="switch"><input type="checkbox" ${plugins[k]?'checked':''}><span class="slider"></span></label>`;
+                r.querySelector('input').onchange = (e) => {
+                    plugins[k] = e.target.checked;
+                    localStorage.setItem('plugins', JSON.stringify(plugins));
+                };
+                l.appendChild(r);
+            });
+        }
+    </script>
 </body>
-</html>
+</html>```
