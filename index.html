@@ -26,15 +26,16 @@
     --active-bg: #dadce0;
     --mention-bg: rgba(88, 101, 242, 0.1);
     --mention-fg: #5865f2;
-    --mention-bg-highlight: rgba(250, 233, 105, 0.1);
-    --mention-border-highlight: #faa81a;
+    /* Discordのメンション(黄色)背景 */
+    --mention-highlight-bg: rgba(250, 166, 26, 0.1); 
+    --mention-highlight-bar: #faa61a;
+    
     --error-bg: rgba(237, 66, 69, 0.05);
     --error-border: #ed4245;
     --code-bg: #f2f3f5;
     --message-hover: rgba(6, 6, 7, 0.02);
     --popup-bg: #ffffff;
     --popup-highlight: #e3e5e8;
-    --deleted-bg: rgba(237, 66, 69, 0.05);
     --reply-spine-color: #c4c9ce; 
     --folder-bg: rgba(88, 101, 242, 0.2);
 }
@@ -52,15 +53,15 @@ html.dark {
     --button-text: #ffffff;
     --hover-bg: #35373c;
     --active-bg: #3f4147;
-    --mention-bg: rgba(88, 101, 242, 0.15);
+    --mention-bg: rgba(88, 101, 242, 0.3);
     --mention-fg: #c9cdfb;
-    --mention-bg-highlight: rgba(250, 233, 105, 0.05);
+    /* Dark mode highlight */
+    --mention-highlight-bg: rgba(250, 166, 26, 0.1); 
     --error-bg: rgba(240, 71, 71, 0.1);
     --code-bg: #2b2d31;
     --message-hover: rgba(2, 2, 2, 0.06);
     --popup-bg: #2b2d31;
     --popup-highlight: #35373c;
-    --deleted-bg: rgba(240, 71, 71, 0.1);
     --reply-spine-color: #4f545c; 
     --folder-bg: rgba(88, 101, 242, 0.2);
 }
@@ -78,7 +79,6 @@ html.dark {
 #message-input::placeholder { color: var(--text-secondary); opacity: 0.7; }
 #message-input, .input-field { outline: none; border: none; }
 
-/* FIX: Scroll Anchoring for smooth history load */
 #message-container { overflow-anchor: none; }
 
 /* Drag and Drop Overlay */
@@ -105,7 +105,11 @@ html.dark {
     content: ''; position: absolute; left: -14px; top: 10px; height: 28px; width: 8px;
     background-color: var(--text-primary); border-radius: 0 4px 4px 0; transition: height 0.2s;
 }
-
+.server-icon.in-folder::after {
+    content: ''; position: absolute; inset: -4px;
+    background-color: rgba(88, 101, 242, 0.1); 
+    border-radius: 16px; z-index: -1; 
+}
 .folder-closed {
     width: 48px; height: 48px; border-radius: 24px;
     background-color: var(--folder-bg); cursor: pointer;
@@ -115,17 +119,10 @@ html.dark {
 }
 .folder-closed:hover { border-radius: 16px; background-color: var(--button-bg); }
 .folder-icon-thumb { width: 10px; height: 10px; object-fit: cover; border-radius: 50%; background: var(--bg-secondary); }
-
 .folder-opened {
     background-color: transparent !important; color: var(--text-secondary);
     width: 48px; height: 48px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center; padding: 4px;
-}
-
-.server-icon.in-folder::after {
-    content: ''; position: absolute; inset: -4px;
-    background-color: rgba(88, 101, 242, 0.1); 
-    border-radius: 16px; z-index: -1; 
 }
 
 .ping-dot {
@@ -133,12 +130,16 @@ html.dark {
     background-color: #ed4245; border-radius: 50%; border: 4px solid var(--bg-tertiary);
     z-index: 30; pointer-events: none;
 }
+
+/* Channels */
 .channel-item.active { background-color: var(--active-bg); color: var(--text-primary); }
 .channel-item:hover:not(.active) { background-color: var(--hover-bg); color: var(--text-primary); }
 
+/* Avatar Decoration - Resized & Positioned */
 .avatar-container {
     width: 40px; height: 40px; margin-top: 2px;
     position: relative; flex-shrink: 0;
+    overflow: visible; /* Important to let decoration show */
 }
 .avatar-img { 
     width: 100%; height: 100%; 
@@ -148,27 +149,59 @@ html.dark {
 .avatar-decoration { 
     position: absolute; 
     top: 50%; left: 50%; 
-    width: 124%; height: 124%; 
+    width: 140%; height: 140%; /* Iconより大きく表示 */
     transform: translate(-50%, -50%); 
     pointer-events: none; z-index: 20; 
     object-fit: contain;
 }
 
-#user-info-panel .relative { width: 36px; height: 36px; overflow: visible; }
-#user-info-panel .avatar-decoration { width: 130%; height: 130%; }
-
-.message-group { position: relative; margin-top: 1.0625rem; width: 100%; display: flex; flex-direction: column; align-items: flex-start; }
+/* Messages */
+.message-group { 
+    position: relative; margin-top: 1.0625rem; width: 100%; 
+    display: flex; flex-direction: column; align-items: flex-start; 
+}
 .message-group.grouped { margin-top: 0.125rem; }
 .message-group:hover { background-color: var(--message-hover); }
+
+/* Hover Toolbar */
 .message-group:hover .message-toolbar { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.message-toolbar { opacity: 0; pointer-events: none; transform: translateY(-4px); transition: all 0.1s; border: 1px solid var(--border-color); }
+.message-toolbar { 
+    opacity: 0; pointer-events: none; transform: translateY(-4px); transition: all 0.1s; 
+    border: 1px solid var(--border-color); 
+}
+
+/* Deleted messages: No toolbar, red text */
+.message-deleted .message-toolbar { display: none !important; }
+.message-deleted .message-content-text { color: #ed4245; }
 
 .message-content-text { width: 100%; user-select: text; overflow-wrap: break-word; word-break: break-word; line-height: 1.375rem; color: var(--text-primary); }
 
-.message-sending { opacity: 0.5; } 
-.message-failed .message-content-text { color: #ed4245; }
+/* Mentions */
+.mention {
+    background: var(--mention-bg);
+    color: var(--mention-fg);
+    padding: 0 2px;
+    border-radius: 3px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.mention:hover { background: var(--button-bg); color: #fff; }
 
-.deleted-text { color: #ed4245; }
+/* Yellow highlight for messages that mention me */
+.message-mentioned {
+    background-color: var(--mention-highlight-bg) !important;
+    position: relative;
+}
+.message-mentioned::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px; background-color: var(--mention-highlight-bar);
+}
+
+/* Send Fail States */
+.message-sending { opacity: 0.5; } 
+.message-failed-text .message-content-text { color: #ed4245 !important; } /* 本体文字を赤に */
+.message-deleted-text-label { color: var(--text-secondary); opacity: 0.6; font-size: 0.8rem; margin-left: 5px; user-select: none; }
+
 .history-line { font-size: 0.9em; color: var(--text-secondary); opacity: 0.8; text-decoration: line-through; display: block; margin-bottom: 2px; }
 .edited-tag { font-size: 0.625rem; color: var(--text-secondary); margin-left: 4px; user-select: none; }
 
@@ -183,18 +216,31 @@ html.dark {
     border-top-left-radius: 6px; margin-top: -6px; pointer-events: none; z-index: 0;
 }
 
-.settings-tab-item { padding: 6px 12px; border-radius: 4px; cursor: pointer; color: var(--text-secondary); font-weight: 500; }
-.settings-tab-item:hover { background-color: var(--hover-bg); color: var(--text-primary); }
-.settings-tab-item.active { background-color: var(--active-bg); color: var(--text-primary); cursor: default; }
+/* Custom Context Menu */
+#custom-context-menu {
+    position: fixed; z-index: 9999;
+    background: var(--bg-quaternary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px; padding: 4px 0;
+    min-width: 180px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+.ctx-item {
+    padding: 6px 12px; font-size: 0.9rem; color: var(--text-primary); cursor: pointer;
+}
+.ctx-item:hover { background: var(--button-bg); color: #fff; }
+.ctx-sep { height: 1px; background: var(--border-color); margin: 4px 0; }
 
-.theme-card { width: 140px; height: 90px; border-radius: 8px; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s; }
-.theme-card:hover { transform: translateY(-2px); }
-.theme-card-check { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background-color: white; border: 3px solid var(--text-secondary); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.attachment-preview-item {
+    position: relative;
+}
+.attachment-remove-btn {
+    position: absolute; top: -5px; right: -5px; 
+    background: #ed4245; color: white; border-radius: 50%;
+    width: 16px; height: 16px; font-size: 10px; display: flex; 
+    align-items: center; justify-content: center; cursor: pointer;
+}
 
-.category-arrow { transition: transform 0.2s; }
-.category-collapsed .category-arrow { transform: rotate(-90deg); }
-.channel-collapsed { display: none !important; }
-
+/* Toggle Switch */
 .switch { position: relative; display: inline-block; width: 40px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #80848e; transition: .4s; border-radius: 24px; }
@@ -202,17 +248,22 @@ html.dark {
 input:checked + .slider { background-color: #3ba55c; }
 input:checked + .slider:before { transform: translateX(16px); }
 
+/* Settings */
+.settings-tab-item { padding: 6px 12px; border-radius: 4px; cursor: pointer; color: var(--text-secondary); font-weight: 500; }
+.settings-tab-item:hover { background-color: var(--hover-bg); color: var(--text-primary); }
+.settings-tab-item.active { background-color: var(--active-bg); color: var(--text-primary); cursor: default; }
+
 .plugin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--bg-quaternary); }
-.plugin-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body class="font-sans h-screen flex flex-col overflow-hidden bg-gray-200 dark:bg-gray-800 text-[var(--text-primary)]">
     
-    <!-- Drag & Drop Overlay -->
     <div id="drag-overlay" class="fixed inset-0 z-[200] flex flex-col items-center justify-center backdrop-blur-sm m-4 rounded-3xl border-dashed">
         <svg class="w-32 h-32 text-white animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
         <div class="text-white text-3xl font-bold">ドロップしてファイルをアップロード</div>
     </div>
+    
+    <div id="custom-context-menu" class="hidden"></div>
 
     <div id="settings-modal" class="hidden fixed inset-0 bg-black/50 z-[100] flex justify-center items-center backdrop-blur-sm">
         <div class="bg-[var(--bg-secondary)] w-full max-w-3xl h-[85vh] rounded-lg shadow-2xl flex overflow-hidden scale-100 transition-transform">
@@ -237,17 +288,13 @@ input:checked + .slider:before { transform: translateX(16px); }
                     <h2 class="text-2xl font-bold mb-6">General</h2>
                     <h3 class="text-sm font-bold uppercase text-[var(--text-secondary)] mb-4">THEME</h3>
                     <div class="flex gap-4">
-                        <div class="theme-card bg-[#2f3136]" onclick="setTheme('dark')">
-                            <div class="theme-card-check" id="theme-check-dark">
-                                <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-                            </div>
+                        <div class="w-[140px] h-[90px] rounded-lg cursor-pointer flex items-center justify-center bg-[#2f3136] relative border-2 border-transparent hover:border-gray-500" onclick="setTheme('dark')">
                             <span class="text-white font-bold">Dark</span>
+                            <div id="theme-check-dark" class="absolute top-2 right-2 w-4 h-4 bg-green-500 rounded-full"></div>
                         </div>
-                        <div class="theme-card bg-[#ffffff] border border-gray-300" onclick="setTheme('light')">
-                            <div class="theme-card-check hidden" id="theme-check-light">
-                                <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-                            </div>
+                        <div class="w-[140px] h-[90px] rounded-lg cursor-pointer flex items-center justify-center bg-white border border-gray-300 relative hover:border-gray-400" onclick="setTheme('light')">
                             <span class="text-black font-bold">Light</span>
+                            <div id="theme-check-light" class="absolute top-2 right-2 w-4 h-4 bg-green-500 rounded-full hidden"></div>
                         </div>
                     </div>
                 </div>
@@ -255,11 +302,9 @@ input:checked + .slider:before { transform: translateX(16px); }
         </div>
     </div>
 
+    <!-- Login UI Omitted for Brevity (Same as provided but logic retained) -->
     <div id="auth-section" class="w-full max-w-md m-auto p-8 rounded-lg shadow-xl flex-col bg-white dark:bg-gray-700 hidden relative z-50">
-        <div id="migration-view" class="hidden flex-col items-center justify-center mb-4">
-            <div class="loader mb-2"></div>
-            <div class="text-sm font-bold text-center">データを更新中...</div>
-        </div>
+        <div id="migration-view" class="hidden flex-col items-center justify-center mb-4"><div class="loader mb-2"></div><div class="text-sm font-bold">Loading...</div></div>
         <div id="account-selection-view" class="hidden flex-col">
             <h1 class="text-2xl font-bold text-center mb-6">おかえりなさい！</h1>
             <div id="saved-accounts-list" class="space-y-2 mb-4 max-h-80 overflow-y-auto"></div>
@@ -271,17 +316,13 @@ input:checked + .slider:before { transform: translateX(16px); }
                 <img id="relogin-avatar" src="" class="w-20 h-20 rounded-full mb-2 shadow-md">
                 <div id="relogin-name" class="font-bold text-lg"></div>
                 <div class="text-xs opacity-60">@<span id="relogin-username"></span></div>
-                <div class="text-red-500 font-bold text-sm mt-2 animate-pulse">再ログインが必要です</div>
             </div>
             <div id="login-error" class="text-red-500 text-xs mb-3 text-center"></div>
             <form class="space-y-4" onsubmit="return false;">
-                <div class="text-xs text-[var(--text-secondary)] uppercase font-bold" id="token-label">トークン</div>
-                <input type="password" id="token-input" class="input-field w-full p-2.5 rounded-md" placeholder="MTE...">
-                <button type="button" id="add-account-button" class="bg-blue-600 hover:bg-blue-700 w-full py-3 rounded-md font-bold text-white flex justify-center items-center transition-colors">
-                    <span id="add-account-button-text">ログイン</span>
-                    <div id="login-spinner" class="loader hidden" style="width: 20px; height: 20px; border-width: 3px;"></div>
-                </button>
-                <button type="button" id="back-to-accounts-btn" class="text-sm text-[var(--text-secondary)] hover:underline w-full py-2">アカウント一覧に戻る</button>
+                <div class="text-xs text-[var(--text-secondary)] uppercase font-bold">トークン</div>
+                <input type="password" id="token-input" class="input-field w-full p-2.5 rounded-md bg-[var(--bg-tertiary)] text-[var(--text-primary)]" placeholder="MTE...">
+                <button type="button" id="add-account-button" class="bg-blue-600 hover:bg-blue-700 w-full py-3 rounded-md font-bold text-white">ログイン</button>
+                <button type="button" id="back-to-accounts-btn" class="text-sm text-[var(--text-secondary)] hover:underline w-full py-2">戻る</button>
             </form>
         </div>
     </div>
@@ -295,7 +336,7 @@ input:checked + .slider:before { transform: translateX(16px); }
             </div>
             
             <div class="w-full md:w-60 flex flex-col border-r flex-1 min-h-0 bg-[var(--bg-secondary)]" style="border-color: var(--bg-tertiary);">
-                <div class="h-12 p-3 border-b font-bold truncate flex items-center shadow-sm select-none hover:bg-[var(--hover-bg)] transition-colors cursor-pointer" id="guild-name" style="border-color: var(--bg-tertiary);"></div>
+                <div class="h-12 p-3 border-b font-bold truncate flex items-center shadow-sm select-none hover:bg-[var(--hover-bg)] cursor-pointer" id="guild-name" style="border-color: var(--bg-tertiary);"></div>
                 <div id="channel-list" class="flex-1 overflow-y-auto p-2"></div>
                 
                 <div class="relative flex-shrink-0 bg-[var(--bg-tertiary)]/80 backdrop-blur-md">
@@ -307,11 +348,9 @@ input:checked + .slider:before { transform: translateX(16px); }
                              <div class="text-sm font-bold truncate leading-tight" id="current-user-name"></div>
                              <div class="text-xs opacity-60 truncate leading-tight" id="current-user-subtext"></div>
                         </div>
-                        <div class="flex items-center">
-                            <button id="open-settings-btn" class="p-2 hover:bg-[var(--active-bg)] rounded-md cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" title="ユーザー設定" onclick="event.stopPropagation(); renderSettingsModal();">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg>
-                            </button>
-                        </div>
+                        <button id="open-settings-btn" class="p-2 hover:bg-[var(--active-bg)] rounded-md cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]" onclick="event.stopPropagation(); renderSettingsModal();">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"></path></svg>
+                        </button>
                     </div>
 
                     <div id="account-switcher" class="hidden absolute bottom-[110%] left-2 min-w-[240px] rounded-lg shadow-xl overflow-hidden border z-50 bg-[var(--popup-bg)]" style="border-color: var(--border-color);">
@@ -340,24 +379,17 @@ input:checked + .slider:before { transform: translateX(16px); }
             <div id="message-container" class="flex-1 overflow-y-auto p-4 space-y-0" style="background-color: var(--bg-primary);"></div>
             
             <div class="flex-shrink-0 pt-0">
-                <div id="attachment-preview-bar" class="hidden px-4 py-2 text-sm border-t items-center justify-between" style="border-color: var(--bg-tertiary); background-color: var(--bg-secondary);">
-                    <div class="flex items-center gap-2 font-mono"><span class="text-blue-500">📎</span> <b id="attachment-preview-name"></b></div>
-                    <button id="cancel-attachment-btn" class="p-1 rounded-full hover:bg-[var(--hover-bg)]">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                    </button>
-                </div>
+                <div id="attachment-list" class="hidden px-4 py-2 text-sm border-t flex flex-wrap gap-2 bg-[var(--bg-secondary)]" style="border-color: var(--bg-tertiary);"></div>
                 
                 <div class="px-4 pb-4 pt-1 bg-[var(--bg-primary)]">
                     <div class="flex items-start gap-2 bg-[var(--bg-tertiary)] p-2 rounded-lg relative transition-all shadow-sm" style="min-height: 44px;">
                         <input type="file" id="file-input" class="hidden" multiple>
                         
-                        <button id="attach-button" class="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors mt-0.5" title="ファイルを添付">
+                        <button id="attach-button" class="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)] transition-colors mt-0.5">
                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
                         </button>
 
                         <div class="relative w-full self-center">
-                            <div id="popup-picker" class="hidden absolute left-0 w-full popup-menu" style="bottom: 100%; margin-bottom: 12px;"></div>
-                            
                             <div id="reply-bar" class="hidden flex items-center justify-between text-sm text-[var(--text-secondary)] mb-1 px-1 opacity-80">
                                  <span class="truncate">Replying to <b id="reply-username"></b></span>
                                  <button id="cancel-reply-btn" class="p-0.5 rounded-full hover:text-[var(--text-primary)]">
@@ -370,7 +402,7 @@ input:checked + .slider:before { transform: translateX(16px); }
                         </div>
                         
                         <button id="send-button" class="p-2 rounded-lg text-[var(--button-bg)] hover:bg-[var(--hover-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors self-end" disabled>
-                            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(0deg);"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                         </button>
                     </div>
                 </div>
@@ -384,13 +416,10 @@ let currentAccount = null;
 let currentChannel = null;
 let lastSequence = null;
 let heartbeatInterval = null;
-let timeoutInterval = null;
 let replyingTo = null;
 let oldestMessageId = null;
 let isLoadingMore = false;
-let attachedFile = null;
-let commandDebounce = null;
-let memberDebounce = null;
+let attachedFiles = [];
 let maxCharCount = 2000;
 let guildFolders = [];
 let guildDataMap = new Map();
@@ -413,123 +442,108 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.documentElement.classList.add('dark');
     }
     
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('click', () => document.getElementById('custom-context-menu').classList.add('hidden'));
+
     // Paste Support
     document.body.addEventListener('paste', e => {
-        const file = e.clipboardData.files[0];
-        if (file) {
+        const files = e.clipboardData.files;
+        if (files.length > 0) {
             e.preventDefault();
-            loadAttachment(file);
+            handleFiles(files);
         }
     });
     
-    // Drag & Drop Support
-    const dragOverlay = document.getElementById('drag-overlay');
-    document.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        dragCounter++;
-        document.body.classList.add('dragging');
-    });
-    document.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dragCounter--;
-        if(dragCounter === 0) document.body.classList.remove('dragging');
-    });
+    // Drag & Drop
+    const overlay = document.getElementById('drag-overlay');
+    document.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; document.body.classList.add('dragging'); });
+    document.addEventListener('dragleave', (e) => { e.preventDefault(); dragCounter--; if(dragCounter===0) document.body.classList.remove('dragging'); });
     document.addEventListener('dragover', e => e.preventDefault());
     document.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dragCounter = 0;
-        document.body.classList.remove('dragging');
-        if (e.dataTransfer.files.length > 0) {
-            loadAttachment(e.dataTransfer.files[0]);
-        }
+        e.preventDefault(); dragCounter = 0; document.body.classList.remove('dragging');
+        handleFiles(e.dataTransfer.files);
     });
 
     document.getElementById('dm-icon').onclick = loadDms;
     document.getElementById('send-button').onclick = sendMessage;
     
-    document.getElementById('attach-button').onclick = () => {
-        document.getElementById('file-input').click();
-    };
+    document.getElementById('attach-button').onclick = () => document.getElementById('file-input').click();
+    document.getElementById('file-input').onchange = (e) => handleFiles(e.target.files);
 
-    document.getElementById('file-input').onchange = (e) => {
-        if (e.target.files[0]) loadAttachment(e.target.files[0]);
-    };
-
-    document.getElementById('cancel-attachment-btn').onclick = cancelAttachment;
     document.getElementById('cancel-reply-btn').onclick = cancelReply;
     
-    document.getElementById('message-input').oninput = handleInput;
-    document.getElementById('message-input').onkeypress = (e) => {
+    const input = document.getElementById('message-input');
+    input.oninput = handleInput;
+    input.onkeydown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
+        if (e.key === 'ArrowUp' && input.value === '') {
+            e.preventDefault();
+            editLastOwnMessage();
+        }
     };
 
     document.getElementById('back-to-channels-btn').onclick = showSidebarView;
-    document.getElementById('open-settings-btn').onclick = (e) => {
-        e.stopPropagation();
-        renderSettingsModal();
-    };
-    
-    document.getElementById('add-account-switcher-btn').onclick = () => {
-        document.getElementById('account-switcher').classList.add('hidden');
-        showLoginScreen();
-    };
+    document.getElementById('open-settings-btn').onclick = (e) => { e.stopPropagation(); renderSettingsModal(); };
+    document.getElementById('add-account-switcher-btn').onclick = () => { document.getElementById('account-switcher').classList.add('hidden'); showLoginScreen(); };
+    document.getElementById('show-add-account-form-btn').onclick = () => showTokenInput();
+    document.getElementById('back-to-accounts-btn').onclick = () => { document.getElementById('token-input-view').classList.add('hidden'); document.getElementById('account-selection-view').classList.remove('hidden'); document.getElementById('account-selection-view').classList.add('flex'); };
 
     window.addEventListener('resize', handleResize);
 
     const accounts = getAccounts();
     const activeId = getActiveAccountId();
-    
-    if (accounts.length > 0 && activeId) {
-        switchAccount(activeId);
-    } else {
-        showLoginScreen();
-    }
+    if (accounts.length > 0 && activeId) switchAccount(activeId);
+    else showLoginScreen();
 });
-
-function loadAttachment(file) {
-    attachedFile = file;
-    const previewBar = document.getElementById('attachment-preview-bar');
-    previewBar.classList.remove('hidden');
-    previewBar.classList.add('flex');
-    document.getElementById('attachment-preview-name').innerText = attachedFile.name;
-    handleInput();
-}
 
 const getAccounts = () => JSON.parse(localStorage.getItem('accounts')) || [];
 const saveAccounts = a => localStorage.setItem('accounts', JSON.stringify(a));
 const getActiveAccountId = () => localStorage.getItem('activeAccountId');
 const setActiveAccountId = id => localStorage.setItem('activeAccountId', id);
 
-const generateSuperProperties = () => btoa(JSON.stringify({ 
-    os: "Windows", 
-    browser: "Chrome", 
-    device: "", 
-    system_locale: "ja", 
-    browser_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", 
-    browser_version: "120.0.0.0", 
-    os_version: "10", 
-    release_channel: "stable", 
-    client_build_number: 262355 
-}));
+function handleFiles(files) {
+    if(attachedFiles.length >= 10) return alert('添付ファイルは最大10個までです');
+    for (let f of files) {
+        if(attachedFiles.length < 10) attachedFiles.push(f);
+    }
+    renderAttachments();
+    handleInput();
+}
+
+function renderAttachments() {
+    const list = document.getElementById('attachment-list');
+    list.innerHTML = '';
+    if(attachedFiles.length === 0) { list.classList.add('hidden'); return; }
+    list.classList.remove('hidden');
+    
+    attachedFiles.forEach((f, idx) => {
+        const d = document.createElement('div');
+        d.className = "bg-[var(--bg-tertiary)] px-2 py-1 rounded text-xs flex items-center attachment-preview-item border border-[var(--border-color)]";
+        d.innerHTML = `<span class="truncate max-w-[150px]">${f.name}</span><div class="attachment-remove-btn">×</div>`;
+        d.querySelector('.attachment-remove-btn').onclick = () => {
+            attachedFiles.splice(idx, 1);
+            renderAttachments();
+            handleInput();
+        };
+        list.appendChild(d);
+    });
+}
+
+function clearAttachments() {
+    attachedFiles = [];
+    document.getElementById('file-input').value = "";
+    renderAttachments();
+    handleInput();
+}
 
 async function apiRequest(token, path, method = 'GET', body = null, isFormData = false) {
-    const opts = { 
-        method, 
-        headers: { 
-            'Authorization': token, 
-            'X-Super-Properties': generateSuperProperties() 
-        } 
-    };
+    const opts = { method, headers: { 'Authorization': token, 'X-Super-Properties': btoa(JSON.stringify({ os: "Windows", browser: "Chrome", device: "", system_locale: "ja", client_build_number: 262355 })) } };
     if (body) {
-        if (isFormData) {
-            opts.body = body;
-        } else {
-            opts.body = JSON.stringify(body);
-            opts.headers['Content-Type'] = 'application/json';
-        }
+        if (isFormData) opts.body = body;
+        else { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
     }
     try {
         const r = await fetch(`${API_BASE}${path}`, opts);
@@ -537,942 +551,571 @@ async function apiRequest(token, path, method = 'GET', body = null, isFormData =
         const data = r.status === 204 ? {} : await r.json();
         if (!r.ok) return { error: data, status: r.status };
         return { data, status: r.status };
-    } catch (e) {
-        return { error: { message: "Network error" }, status: 0 };
-    }
+    } catch (e) { return { error: { message: "Network error" }, status: 0 }; }
 }
 
 function cleanupState() {
     if (ws) { ws.onclose = null; ws.close(); ws = null; }
-    currentChannel = null;
-    lastSequence = null;
-    attachedFile = null;
+    currentChannel = null; attachedFiles = [];
     if (heartbeatInterval) clearInterval(heartbeatInterval);
-    if (timeoutInterval) clearInterval(timeoutInterval);
-    
     document.getElementById('guild-list').innerHTML = '';
     document.getElementById('channel-list').innerHTML = '';
     document.getElementById('message-container').innerHTML = '';
     document.getElementById('guild-name').innerText = '';
-    
-    messageStore = {}; 
-    guildFolders = []; 
-    guildDataMap.clear();
-    editedMessages = {};
-    pingCounts = {};
-    
-    cancelReply();
-    cancelAttachment();
+    messageStore = {}; guildDataMap.clear(); editedMessages = {}; pingCounts = {};
+    cancelReply(); clearAttachments();
 }
 
 function switchAccount(id) {
     cleanupState();
     setActiveAccountId(id);
-    const accounts = getAccounts();
-    const account = accounts.find(a => a.id === id);
-    if (!account) { showLoginScreen(); return; }
-    currentAccount = account;
+    const acc = getAccounts().find(a => a.id === id);
+    if (!acc) { showLoginScreen(); return; }
+    currentAccount = acc;
     maxCharCount = (currentAccount.premium_type === 2) ? 4000 : 2000;
-    document.getElementById('token-input').value = '';
-    updateView('app');
-    renderCurrentUserPanel();
-    loadGuilds();
+    updateView('app'); renderCurrentUserPanel(); loadGuilds();
     setTimeout(connectWS, 100);
 }
 
-function updateView(viewName) {
-    const authSection = document.getElementById('auth-section');
-    const mainApp = document.getElementById('main-app');
-    if (viewName === 'auth') {
-        authSection.classList.remove('hidden'); authSection.classList.add('flex');
-        mainApp.classList.add('hidden'); mainApp.classList.remove('flex');
-    } else if (viewName === 'app') {
-        authSection.classList.add('hidden'); authSection.classList.remove('flex');
-        mainApp.classList.remove('hidden'); mainApp.classList.add('flex');
-        if (window.innerWidth < 768) showSidebarView();
-    }
+function updateView(view) {
+    const auth = document.getElementById('auth-section');
+    const app = document.getElementById('main-app');
+    if (view === 'auth') { auth.classList.remove('hidden'); auth.classList.add('flex'); app.classList.add('hidden'); } 
+    else { auth.classList.add('hidden'); app.classList.remove('hidden'); app.classList.add('flex'); if(window.innerWidth<768) showSidebarView(); }
 }
 
-function showLoginScreen(reloginAccount = null) {
-    cleanupState();
-    updateView('auth');
-    document.getElementById('migration-view').classList.add('hidden');
+function showLoginScreen() {
+    cleanupState(); updateView('auth');
     document.getElementById('token-input-view').classList.add('hidden');
     renderSavedAccountsList();
-    const accounts = getAccounts();
-    if (accounts.length > 0 && !reloginAccount) {
+    const accs = getAccounts();
+    if(accs.length>0) {
         document.getElementById('account-selection-view').classList.remove('hidden');
         document.getElementById('account-selection-view').classList.add('flex');
-    } else {
-        showTokenInput(reloginAccount);
-    }
+    } else showTokenInput();
 }
 
-function showTokenInput(account) {
+function showTokenInput() {
     document.getElementById('account-selection-view').classList.add('hidden');
     document.getElementById('account-selection-view').classList.remove('flex');
     document.getElementById('token-input-view').classList.remove('hidden');
     document.getElementById('token-input-view').classList.add('flex');
-    document.getElementById('token-input').value = '';
-    
-    const userInfo = document.getElementById('relogin-user-info');
-    if (account) {
-        document.getElementById('auth-title').innerText = '再ログイン';
-        userInfo.classList.remove('hidden'); 
-        userInfo.classList.add('flex');
-        document.getElementById('relogin-name').innerText = account.global_name || account.username;
-        document.getElementById('relogin-username').innerText = account.username;
-        const avatar = account.avatar ? `https://cdn.discordapp.com/avatars/${account.id}/${account.avatar}.png?size=128` : `https://cdn.discordapp.com/embed/avatars/${account.discriminator % 5}.png`;
-        document.getElementById('relogin-avatar').src = avatar;
-        
-        document.getElementById('token-label').innerText = '新しいトークン';
-        document.getElementById('add-account-button-text').innerText = 'アカウントを更新';
-        document.getElementById('add-account-button').onclick = () => addAccount(document.getElementById('token-input').value, account.id);
-    } else {
-        document.getElementById('auth-title').innerText = 'アカウントを追加';
-        userInfo.classList.add('hidden'); 
-        userInfo.classList.remove('flex');
-        document.getElementById('token-label').innerText = 'トークン';
-        document.getElementById('add-account-button-text').innerText = 'ログイン';
-        document.getElementById('add-account-button').onclick = () => addAccount(document.getElementById('token-input').value);
-    }
+    document.getElementById('add-account-button').onclick = () => addAccount(document.getElementById('token-input').value);
 }
 
-function handleResize() { 
-    if (window.innerWidth >= 768) {
-        showChatView();
-        document.getElementById('sidebar-view').classList.remove('hidden');
-    } else if (currentChannel) {
-        showChatView();
-    } else {
-        showSidebarView(); 
-    }
-}
-function showSidebarView() { 
-    document.getElementById('sidebar-view').classList.remove('hidden'); 
-    document.getElementById('chat-section').classList.add('hidden'); 
-}
-function showChatView() { 
-    document.getElementById('sidebar-view').classList.add('hidden'); 
-    document.getElementById('chat-section').classList.remove('hidden'); 
-    document.getElementById('chat-section').classList.add('flex'); 
-}
+function handleResize() { if (window.innerWidth >= 768) { document.getElementById('sidebar-view').classList.remove('hidden'); } }
+function showSidebarView() { document.getElementById('sidebar-view').classList.remove('hidden'); document.getElementById('chat-section').classList.add('hidden'); }
+function showChatView() { document.getElementById('sidebar-view').classList.add('hidden'); document.getElementById('chat-section').classList.remove('hidden'); document.getElementById('chat-section').classList.add('flex'); }
 
 function renderSavedAccountsList() {
     const list = document.getElementById('saved-accounts-list');
-    const accounts = getAccounts();
     list.innerHTML = '';
-    accounts.forEach(acc => {
-        const div = document.createElement('div');
-        div.className = "flex items-center gap-3 p-3 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors";
-        div.style.borderColor = 'var(--border-color)';
-        const avatar = acc.avatar ? `https://cdn.discordapp.com/avatars/${acc.id}/${acc.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${acc.discriminator % 5}.png`;
-        div.innerHTML = `<img src="${avatar}" class="w-10 h-10 rounded-full bg-gray-300"><div class="flex-1 min-w-0"><div class="font-bold truncate">${acc.global_name || acc.username}</div><div class="text-xs text-[var(--text-secondary)] truncate">@${acc.username}</div></div><div class="delete-btn p-2 text-gray-400 hover:text-red-500 rounded-full" title="削除"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg></div>`;
-        div.onclick = (e) => { 
-            if (e.target.closest('.delete-btn')) return; 
-            switchAccount(acc.id); 
-        };
-        div.querySelector('.delete-btn').onclick = (e) => deleteAccount(acc.id, e);
-        list.appendChild(div);
+    getAccounts().forEach(acc => {
+        const d = document.createElement('div');
+        d.className = "flex items-center gap-3 p-3 border rounded hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer";
+        d.style.borderColor = 'var(--border-color)';
+        const av = acc.avatar ? `https://cdn.discordapp.com/avatars/${acc.id}/${acc.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${acc.discriminator % 5}.png`;
+        d.innerHTML = `<img src="${av}" class="w-10 h-10 rounded-full bg-gray-300"><div class="flex-1 min-w-0"><div class="font-bold truncate">${acc.global_name || acc.username}</div></div><div class="delete-btn p-2 text-red-400">×</div>`;
+        d.onclick = (e) => { if(!e.target.classList.contains('delete-btn')) switchAccount(acc.id); };
+        d.querySelector('.delete-btn').onclick = (e) => deleteAccount(acc.id, e);
+        list.appendChild(d);
     });
 }
 
 function renderCurrentUserPanel() {
     if (!currentAccount) return;
-    const nameEl = document.getElementById('current-user-name');
-    const subEl = document.getElementById('current-user-subtext');
-    const avCont = document.getElementById('current-user-avatar-container');
-    
-    nameEl.textContent = currentAccount.global_name || currentAccount.username;
-    subEl.textContent = `@${currentAccount.username}`;
-    
-    const avatar = currentAccount.avatar ? `https://cdn.discordapp.com/avatars/${currentAccount.id}/${currentAccount.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${currentAccount.discriminator % 5}.png`;
+    document.getElementById('current-user-name').innerText = currentAccount.global_name || currentAccount.username;
+    document.getElementById('current-user-subtext').innerText = `@${currentAccount.username}`;
+    const av = currentAccount.avatar ? `https://cdn.discordapp.com/avatars/${currentAccount.id}/${currentAccount.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${currentAccount.discriminator % 5}.png`;
     let deco = '';
-    if(currentAccount.avatar_decoration_data) {
-        const decoUrl = `https://cdn.discordapp.com/avatar-decoration-presets/${currentAccount.avatar_decoration_data.asset}.png?size=96`;
-        deco = `<img src="${decoUrl}" class="avatar-decoration">`;
-    }
-    avCont.innerHTML = `<img src="${avatar}" class="avatar-img shadow-sm rounded-full">${deco}`;
+    if(currentAccount.avatar_decoration_data) deco = `<img src="https://cdn.discordapp.com/avatar-decoration-presets/${currentAccount.avatar_decoration_data.asset}.png?size=96" class="avatar-decoration">`;
+    document.getElementById('current-user-avatar-container').innerHTML = `<img src="${av}" class="avatar-img shadow-sm rounded-full">${deco}`;
     renderAccountSwitcher();
 }
 
 function renderAccountSwitcher() {
     const list = document.getElementById('account-list');
-    const accounts = getAccounts();
-    const activeId = getActiveAccountId();
-    
-    list.innerHTML = accounts.map(acc => {
+    list.innerHTML = getAccounts().map(acc => {
         const av = acc.avatar ? `https://cdn.discordapp.com/avatars/${acc.id}/${acc.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${acc.discriminator % 5}.png`;
-        const isActive = acc.id === activeId;
         return `<div class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-[var(--button-bg)] hover:text-white group" onclick="switchAccount('${acc.id}')">
-            <img src="${av}" class="w-8 h-8 rounded-full">
-            <span class="flex-1 truncate text-sm font-semibold">${acc.global_name || acc.username}</span> 
-            ${isActive ? '<div class="w-2 h-2 rounded-full bg-green-500"></div>' : ''} 
-            <div onclick="deleteAccount('${acc.id}',event)" title="削除" class="hidden group-hover:block p-1 hover:bg-black/20 rounded-full">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-            </div>
+            <img src="${av}" class="w-8 h-8 rounded-full"><span class="flex-1 truncate text-sm font-semibold">${acc.global_name || acc.username}</span>
+            <div onclick="deleteAccount('${acc.id}',event)" title="削除" class="hidden group-hover:block px-2 text-sm hover:text-red-300">×</div>
         </div>`;
     }).join('');
 }
 
-function createServerIconElement(s, isInFolder = false) {
-    let el = document.createElement('div'); 
-    el.id = `guild-${s.id}`; 
-    el.className = 'server-icon group ' + (isInFolder ? 'in-folder' : '');
+function createServerIconElement(s, isInFolder=false) {
+    let el = document.createElement('div'); el.id = `guild-${s.id}`; 
+    el.className = 'server-icon group ' + (isInFolder?'in-folder':''); el.dataset.guildId = s.id;
     el.title = s.name;
+    el.innerHTML = s.icon ? `<img src="https://cdn.discordapp.com/icons/${s.id}/${s.icon}.png?size=128" class="object-cover w-full h-full">` : `<div class="w-full h-full flex items-center justify-center bg-gray-700 text-white font-bold text-sm rounded-full transition-all group-hover:rounded-2xl">${s.name.substring(0,2)}</div>`;
     el.onclick = () => loadChannels(s, el);
-    
-    if (s.icon) {
-        el.innerHTML = `<img src="https://cdn.discordapp.com/icons/${s.id}/${s.icon}.png?size=128" class="object-cover w-full h-full transition-all group-hover:rounded-2xl rounded-[50%]">`;
-    } else {
-        el.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-700 text-white font-bold text-sm transition-all group-hover:rounded-2xl rounded-[50%]">${s.name.substring(0, 2)}</div>`;
-    }
     return el;
 }
 
 function renderFolders() {
-    const list = document.getElementById('guild-list');
-    list.innerHTML = '';
-    
+    const list = document.getElementById('guild-list'); list.innerHTML = '';
     guildFolders.forEach(item => {
-        if (!item.guild_ids || item.guild_ids.length === 0) return;
-        
-        if (item.id) {
+        if (item.guild_ids && item.id) {
             const folderWrap = document.createElement('div');
-            folderWrap.className = 'server-folder-wrapper flex flex-col items-center gap-2 w-full transition-all';
-            folderWrap.id = `folder-${item.id}`;
+            folderWrap.className = 'flex flex-col items-center gap-2 w-full transition-all';
+            const childs = item.guild_ids.map(id => guildDataMap.get(id)).filter(Boolean);
+            if(childs.length===0) return;
             
-            const containedGuilds = item.guild_ids.map(id => guildDataMap.get(id)).filter(Boolean);
-            if (containedGuilds.length === 0) return;
-
-            const header = document.createElement('div');
-            header.className = 'folder-closed group'; 
+            const header = document.createElement('div'); header.className = 'folder-closed group';
+            let fColor = item.color ? `rgba(${(item.color>>16)&255},${(item.color>>8)&255},${item.color&255},0.4)` : 'rgba(88,101,242,0.4)';
+            header.style.backgroundColor = fColor;
             
-            const createMiniGrid = () => {
-                header.innerHTML = '';
-                containedGuilds.slice(0, 4).forEach(g => {
-                    const img = document.createElement('img');
-                    img.className = 'folder-icon-thumb';
-                    img.src = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/0.png`;
-                    header.appendChild(img);
-                });
-            }
-            createMiniGrid();
+            const makeMini = () => { header.innerHTML=''; childs.slice(0,4).forEach(g=>{header.innerHTML+=`<img class="folder-icon-thumb" src="${g.icon?`https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64`:`https://cdn.discordapp.com/embed/avatars/0.png`}">`}) };
+            makeMini();
 
-            let folderColor = 'rgba(88, 101, 242, 0.4)';
-            if (item.color) {
-                const r = (item.color >> 16) & 255; const g = (item.color >> 8) & 255; const b = item.color & 255;
-                folderColor = `rgba(${r},${g},${b},0.4)`;
-            }
-            header.style.backgroundColor = folderColor;
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'hidden flex-col gap-2 items-center w-full transition-all py-1';
-            containedGuilds.forEach(g => contentDiv.appendChild(createServerIconElement(g, true)));
-
+            const body = document.createElement('div'); body.className = 'hidden flex-col gap-2 items-center w-full py-1';
+            childs.forEach(g => body.appendChild(createServerIconElement(g, true)));
+            
             header.onclick = () => {
-                const isOpen = openFolderId === item.id;
-                if (isOpen) {
-                    openFolderId = null;
-                    contentDiv.classList.add('hidden'); contentDiv.classList.remove('flex');
-                    header.classList.remove('folder-opened'); header.classList.add('folder-closed');
-                    header.style.backgroundColor = folderColor;
-                    createMiniGrid();
-                } else {
-                    if (openFolderId) {
-                        const prevOpen = document.querySelector(`#folder-${openFolderId} .folder-opened`);
-                        if (prevOpen) prevOpen.click(); 
-                    }
-                    openFolderId = item.id;
-                    contentDiv.classList.remove('hidden'); contentDiv.classList.add('flex');
-                    header.classList.remove('folder-closed'); header.classList.add('folder-opened');
-                    header.innerHTML = `<div class="text-white opacity-80 w-6 h-6"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 7H12L10 5H4C2.9 5 2.01 5.9 2.01 7L2 19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z"/></svg></div>`;
-                    header.style.backgroundColor = 'rgba(88, 101, 242, 0.3)';
+                if(openFolderId === item.id) { openFolderId = null; body.classList.replace('flex','hidden'); header.classList.replace('folder-opened','folder-closed'); header.style.backgroundColor=fColor; makeMini(); }
+                else {
+                    if(openFolderId) document.querySelector(`#guild-list .folder-opened`)?.click();
+                    openFolderId=item.id; body.classList.replace('hidden','flex'); header.classList.replace('folder-closed','folder-opened');
+                    header.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`.replace('M19 13','M20 7H12L10 5H4C2.9 5 2.01 5.9 2.01 7L2 19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z');
                 }
             };
-            folderWrap.appendChild(header); 
-            folderWrap.appendChild(contentDiv);
-            list.appendChild(folderWrap);
-        } else {
-            item.guild_ids.forEach(gid => {
-                const s = guildDataMap.get(gid);
-                if (s) list.appendChild(createServerIconElement(s));
-            });
-        }
+            folderWrap.appendChild(header); folderWrap.appendChild(body); list.appendChild(folderWrap);
+        } else item.guild_ids?.forEach(gid => { const s=guildDataMap.get(gid); if(s) list.appendChild(createServerIconElement(s)); });
     });
 }
 
 async function loadGuilds() {
     if (!currentAccount) return;
     const res = await apiRequest(currentAccount.token, '/users/@me/guilds');
-    if (res.error) {
-        if (res.status === 401) showLoginScreen(currentAccount);
-        return;
-    }
-    guildDataMap.clear();
-    res.data.forEach(s => guildDataMap.set(s.id, s));
-    
-    if (guildFolders.length > 0) { renderFolders(); } else {
-        const list = document.getElementById('guild-list');
-        list.innerHTML = '';
-        res.data.forEach(s => list.appendChild(createServerIconElement(s)));
-    }
+    if (res.error) { if (res.status === 401) showLoginScreen(); return; }
+    guildDataMap.clear(); res.data.forEach(s => guildDataMap.set(s.id, s));
+    if (guildFolders.length > 0) renderFolders();
+    else { const list=document.getElementById('guild-list'); list.innerHTML=''; res.data.forEach(s=>list.appendChild(createServerIconElement(s))); }
 }
 
 async function loadDms() {
-    if (!currentAccount) return;
-    
     document.querySelectorAll('.server-icon.active').forEach(e => e.classList.remove('active'));
     document.getElementById('dm-icon').classList.add('active');
     document.getElementById('guild-name').innerText = 'Direct Messages';
-    
     const res = await apiRequest(currentAccount.token, '/users/@me/channels');
-    if (res.error) return;
-    
-    const list = document.getElementById('channel-list');
-    list.innerHTML = '';
-    const dms = res.data.sort((a,b) => (b.last_message_id||0) - (a.last_message_id||0));
-    
-    dms.forEach(dm => {
-        const div = document.createElement('div');
-        div.className = "channel-item p-1.5 pl-3 rounded-md cursor-pointer mb-0.5 text-[0.95em] truncate flex items-center";
-        
-        let icon = '<span class="text-xl mr-2 text-[var(--text-secondary)]">@</span>';
-        let name = "DM";
-        if(dm.recipients && dm.recipients[0]) {
-            const user = dm.recipients[0];
-            const av = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=32` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            icon = `<img src="${av}" class="w-5 h-5 mr-2 rounded-full">`;
-            name = user.global_name || user.username;
-        }
-        
-        div.innerHTML = `${icon}<span>${name}</span>`;
-        div.onclick = () => selectChannel(dm);
-        list.appendChild(div);
+    const list = document.getElementById('channel-list'); list.innerHTML = '';
+    if(res.data) res.data.sort((a,b)=>(b.last_message_id||0)-(a.last_message_id||0)).forEach(dm => {
+        const d = document.createElement('div');
+        d.className = "channel-item p-1.5 pl-3 rounded-md cursor-pointer mb-0.5 text-[0.95em] truncate flex items-center";
+        d.onclick = () => selectChannel(dm);
+        d.id = `channel-${dm.id}`;
+        let name = "DM", av = "";
+        if(dm.recipients?.[0]) { name = dm.recipients[0].global_name || dm.recipients[0].username; av=`<img src="https://cdn.discordapp.com/avatars/${dm.recipients[0].id}/${dm.recipients[0].avatar}.png?size=32" class="w-5 h-5 mr-2 rounded-full">`; }
+        d.innerHTML = `${av||'<span class="text-xl mr-2 text-gray-500">@</span>'}<span>${name}</span>`;
+        list.appendChild(d);
     });
     updatePingDots();
 }
 
-async function loadChannels(g, element) {
-    if (!currentAccount) return;
+async function loadChannels(g, el) {
     document.querySelectorAll('.server-icon.active').forEach(e => e.classList.remove('active'));
-    if (element) element.classList.add('active');
-    
+    if(el) el.classList.add('active');
     document.getElementById('guild-name').innerText = g.name;
     const res = await apiRequest(currentAccount.token, `/guilds/${g.id}/channels`);
-    if (res.error) return;
+    const list = document.getElementById('channel-list'); list.innerHTML = '';
+    if(!res.data) return;
+    const groups = res.data.reduce((a,c)=>{ (a[c.parent_id||'null']=a[c.parent_id||'null']||[]).push(c); return a; }, {});
     
-    const list = document.getElementById('channel-list');
-    list.innerHTML = '';
-    const channels = res.data;
-    const grouped = channels.reduce((acc, ch) => { 
-        (acc[ch.parent_id || 'null'] = acc[ch.parent_id || 'null'] || []).push(ch); 
-        return acc; 
-    }, {});
+    const render = (c, cat) => {
+        if(![0,5,2].includes(c.type)) return;
+        const d=document.createElement('div'); d.id=`channel-${c.id}`; d.dataset.channelId = c.id;
+        d.className=`channel-item p-1.5 pl-3 rounded-md cursor-pointer mb-0.5 flex items-center ${cat?'ml-2':''} ${c.type===2?'opacity-50':''}`;
+        d.innerHTML = (c.type===2?'<svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24"><path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path></svg>':'<span class="text-lg mr-2 text-gray-500">#</span>') + `<span class="truncate font-medium">${c.name}</span>`;
+        if(c.type!==2) d.onclick = () => selectChannel(c);
+        list.appendChild(d);
+    }
     
-    Object.values(grouped).forEach(arr => arr.sort((a, b) => a.position - b.position));
-    
-    const renderChannelItem = (ch, catId = null) => {
-        if (![0, 5, 2].includes(ch.type)) return;
-        const div = document.createElement('div'); 
-        div.id = `channel-${ch.id}`; 
-        div.className = `channel-item p-1.5 pl-3 rounded-md cursor-pointer mb-0.5 text-[0.95em] truncate flex items-center relative ${catId ? 'channel-child-'+catId : ''}`; 
-        
-        const icon = ch.type === 2 
-            ? '<svg class="w-5 h-5 mr-1.5 opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zm-4 0a8.977 8.977 0 00-6.22 3.32l1.62 1.34C6.54 6.78 7.68 6 9 6c2.37 0 4.54 1.05 5.96 2.7l1.7-1.39A8.932 8.932 0 0010 3.23zM5.16 8.78L2.73 11.2a8.96 8.96 0 000 3.19l2.43 2.43 1.54-1.54-.78-.79c-.28-.56-.45-1.19-.45-1.87s.17-1.3.45-1.86l.78-.78-1.54-1.54z"></path></svg>' 
-            : '<span class="text-xl mr-2 text-[var(--text-secondary)] opacity-70">#</span>';
-        div.innerHTML = `${icon}<span class="${ch.type===2?'':'font-medium'}">${ch.name}</span>`;
-        if (ch.type !== 2) div.onclick = () => selectChannel(ch); 
-        else div.classList.add('opacity-50', 'cursor-not-allowed');
-        list.appendChild(div);
-    };
-    
-    (grouped['null'] || []).forEach(ch => renderChannelItem(ch));
-    channels.filter(i => i.type === 4).sort((x, y) => x.position - y.position).forEach(cat => {
-        const h = document.createElement('div'); 
-        h.className = 'px-2 pt-4 pb-1 text-xs font-bold uppercase text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer flex items-center select-none group'; 
-        h.innerHTML = `<svg class="w-3 h-3 mr-1 category-arrow transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg> ${cat.name}`;
-        h.onclick = () => toggleCategory(cat.id, h);
-        list.appendChild(h); 
-        (grouped[cat.id] || []).forEach(ch => renderChannelItem(ch, cat.id));
+    (groups['null']||[]).sort((a,b)=>a.position-b.position).forEach(c=>render(c));
+    res.data.filter(c=>c.type===4).sort((a,b)=>a.position-b.position).forEach(c => {
+        const cat = document.createElement('div'); cat.className='px-2 pt-4 pb-1 text-xs font-bold uppercase text-[var(--text-secondary)] select-none cursor-pointer flex items-center';
+        cat.innerHTML = `<svg class="w-3 h-3 mr-1 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${c.name}`;
+        cat.onclick = () => { cat.nextElementSibling.classList.toggle('hidden'); cat.querySelector('svg').style.transform = cat.nextElementSibling.classList.contains('hidden')?'rotate(-90deg)':''; };
+        list.appendChild(cat);
+        const wrapper = document.createElement('div');
+        (groups[c.id]||[]).sort((a,b)=>a.position-b.position).forEach(ch=>wrapper.appendChild((()=>{const el=document.createElement('div'); render(ch,true); return list.lastChild;})()));
+        list.appendChild(wrapper);
     });
     updatePingDots();
-}
-
-function toggleCategory(catId, headerEl) {
-    const children = document.querySelectorAll(`.channel-child-${catId}`);
-    const isCollapsed = headerEl.classList.contains('category-collapsed');
-    if (isCollapsed) {
-        headerEl.classList.remove('category-collapsed');
-        children.forEach(c => c.classList.remove('channel-collapsed'));
-    } else {
-        headerEl.classList.add('category-collapsed');
-        children.forEach(c => c.classList.add('channel-collapsed'));
-    }
 }
 
 async function selectChannel(ch) {
-    currentChannel = ch;
-    oldestMessageId = null;
-    isLoadingMore = false;
-    cancelReply(); cancelAttachment();
+    currentChannel = ch; oldestMessageId = null; cancelReply(); clearAttachments();
+    document.querySelectorAll('.channel-item.active').forEach(e => e.classList.remove('active'));
+    const ce = document.getElementById(`channel-${ch.id}`); if(ce) ce.classList.add('active');
     delete pingCounts[ch.id]; updatePingDots();
     
-    document.querySelectorAll('.channel-item.active').forEach(e => e.classList.remove('active'));
-    const cE = document.getElementById(`channel-${ch.id}`);
-    if (cE) cE.classList.add('active');
-    
-    if (window.innerWidth < 768) showChatView();
-
-    let name = ch.name || 'DM';
-    if(ch.recipients && ch.recipients[0]) name = ch.recipients[0].global_name || ch.recipients[0].username;
-    
-    document.getElementById('channel-name-text').innerHTML = `<span class="text-[var(--text-secondary)] opacity-70 mr-1.5">#</span><span>${name}</span>`;
-    
-    const container = document.getElementById('message-container');
-    container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><div class="loader"></div></div>';
-    handleInput(); 
+    if(window.innerWidth < 768) showChatView();
+    let n = ch.name || (ch.recipients?ch.recipients[0].username:"DM");
+    document.getElementById('channel-name-text').innerHTML = `<span class="opacity-50 mr-1">#</span>${n}`;
+    const c = document.getElementById('message-container'); c.innerHTML='<div class="flex items-center justify-center h-full"><div class="loader"></div></div>';
     
     const res = await apiRequest(currentAccount.token, `/channels/${ch.id}/messages?limit=50`);
-    container.innerHTML = '';
+    c.innerHTML='';
+    if(res.error) { c.innerHTML='<div class="text-red-500 text-center p-8 font-bold">アクセスできません</div>'; return; }
     
-    if (res.error) {
-        if (res.status === 401) showLoginScreen(currentAccount);
-        container.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">アクセス権限がありません</div>`;
-        return;
-    }
-
-    const msgs = res.data;
-    if (msgs.length > 0) {
-        oldestMessageId = msgs[msgs.length - 1].id;
-        const fragment = document.createDocumentFragment();
-        const arr = msgs.slice().reverse();
-        for (let i = 0; i < arr.length; i++) {
-             const m = arr[i];
-             const prev = (i > 0) ? arr[i-1] : null;
-             if (plugins.messageLogger) messageStore[m.id] = m;
-             const isGrouped = prev && (prev.author.id === m.author.id) 
-                && !m.referenced_message && !m.webhook_id && !prev.webhook_id 
-                && (new Date(m.timestamp) - new Date(prev.timestamp) < 5 * 60 * 1000);
-             
-             const el = createMessageElement(m, isGrouped);
-             el.dataset.authorId = m.author.id;
-             fragment.appendChild(el);
-        }
-        container.appendChild(fragment);
-        // INSTANT jump (fixes "flying" animation)
-        container.scrollTop = container.scrollHeight;
+    if(res.data.length>0) {
+        oldestMessageId = res.data[res.data.length-1].id;
+        const frag = document.createDocumentFragment();
+        res.data.slice().reverse().forEach((m,i,arr) => {
+            const prev = i>0?arr[i-1]:null;
+            const grouped = prev && prev.author.id===m.author.id && !m.referenced_message && !prev.webhook_id && (new Date(m.timestamp)-new Date(prev.timestamp)<300000);
+            frag.appendChild(createMessageElement(m, grouped));
+        });
+        c.appendChild(frag);
+        c.scrollTop = c.scrollHeight;
     }
 }
 
-async function loadMoreMessages() {
-    if (isLoadingMore || !oldestMessageId || !currentChannel) return;
-    const container = document.getElementById('message-container');
-    
-    if (container.scrollTop > 50) return;
-
-    isLoadingMore = true;
-    
-    // Lock scroll height calc
-    const oldScrollHeight = container.scrollHeight;
-
-    const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages?limit=50&before=${oldestMessageId}`);
-    
-    if (res.data && res.data.length > 0) {
-        const messages = res.data;
-        oldestMessageId = messages[messages.length - 1].id;
-
-        const fragment = document.createDocumentFragment();
-        const arr = messages.reverse();
-
-        let lastBatchAuthId = null;
-        let lastBatchTimestamp = 0;
-
-        arr.forEach((m, index) => {
-            if (plugins.messageLogger) messageStore[m.id] = m;
-            let isGrouped = false;
-            if (index > 0) {
-                 const timeDiff = new Date(m.timestamp).getTime() - lastBatchTimestamp;
-                 if (lastBatchAuthId === m.author.id && !m.referenced_message && !m.webhook_id && timeDiff < 5 * 60 * 1000) {
-                     isGrouped = true;
-                 }
-            }
-            const el = createMessageElement(m, isGrouped);
-            fragment.appendChild(el);
-            lastBatchAuthId = m.author.id;
-            lastBatchTimestamp = new Date(m.timestamp).getTime();
-        });
-
-        container.prepend(fragment);
-        
-        // Instant Fix for jumpiness
-        const newScrollHeight = container.scrollHeight;
-        container.scrollTop = newScrollHeight - oldScrollHeight;
-    } else {
-        oldestMessageId = null;
+document.getElementById('message-container').addEventListener('scroll', async function() {
+    if(this.scrollTop < 50 && oldestMessageId && !isLoadingMore && currentChannel) {
+        isLoadingMore = true; const sh = this.scrollHeight;
+        const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages?limit=50&before=${oldestMessageId}`);
+        if(res.data?.length>0) {
+            oldestMessageId = res.data[res.data.length-1].id;
+            const f = document.createDocumentFragment();
+            let lastT = 0, lastA = null;
+            res.data.reverse().forEach((m, i) => {
+               const g = i>0 && m.author.id===lastA && !m.referenced_message && (new Date(m.timestamp).getTime()-lastT<300000);
+               f.appendChild(createMessageElement(m, g)); lastT=new Date(m.timestamp).getTime(); lastA=m.author.id;
+            });
+            this.prepend(f);
+            this.scrollTop = this.scrollHeight - sh;
+        } else oldestMessageId=null;
+        isLoadingMore = false;
     }
-    isLoadingMore = false;
+});
+
+function formatTime(d) {
+    const pad = n => n.toString().padStart(2,'0');
+    return `${d.getFullYear()} ${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-document.getElementById('message-container').addEventListener('scroll', loadMoreMessages);
+function parseMarkdown(t) {
+    if (!t) return '';
+    let h = t.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Channel Links <#ID>
+    h = h.replace(/&lt;#(\d+)&gt;/g, (m,id) => `<span class="text-[var(--text-link)] cursor-pointer hover:underline font-medium" onclick="handleChannelLink('${id}')">#channel</span>`);
+    // Custom Emojis <:name:id> or <a:name:id>
+    h = h.replace(/&lt;(a?):(\w+):(\d+)&gt;/g, (m,a,n,id) => `<img src="https://cdn.discordapp.com/emojis/${id}.${a?'gif':'png'}" class="w-6 h-6 inline-block align-middle hover:scale-125 transition-transform" title=":${n}:">`);
+    // Mentions <@ID>
+    h = h.replace(/&lt;@!?(\d+)&gt;/g, (m,id) => `<span class="mention" onclick="handleUserLink('${id}')">@${id}</span>`);
+    // Links
+    h = h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="text-[var(--text-link)] hover:underline">$1</a>');
+    return h.replace(/\n/g, '<br>');
+}
 
-function createMessageElement(m, isGrouped) {
-    let contentHtml = parseMarkdown(m.content);
-    if (m.mentions) {
-        m.mentions.forEach(u => { 
-            const name = u.global_name || u.username;
-            contentHtml = contentHtml.replace(new RegExp(`<@!?${u.id}>`, 'g'), `<span class="mention">@${name}</span>`);
-        });
-    }
+function handleChannelLink(id) {
+    const el = document.getElementById(`channel-${id}`);
+    if(el) el.click();
+    else alert('チャンネルID: '+id+' (このサーバー外か読み込まれていません)');
+}
+
+function createMessageElement(m, grouped) {
+    if(plugins.messageLogger) messageStore[m.id] = m;
+    let text = parseMarkdown(m.content);
+    const mentionsMe = m.mentions?.some(u => u.id === currentAccount.id) || m.content.includes(`<@${currentAccount.id}>`);
     
-    let accessoriesHtml = '';
-    if (m.attachments?.length > 0) {
-        m.attachments.forEach(a => {
-            const isImg = a.content_type?.startsWith('image/');
-            const isVid = a.content_type?.startsWith('video/');
-            const deletedClass = m.deleted ? 'message-deleted-img' : '';
-            if(isImg) {
-                accessoriesHtml += `<a href="${a.url}" target="_blank" class="block mt-2"><img src="${a.url}" class="max-w-[300px] max-h-[300px] rounded-lg bg-[var(--bg-tertiary)] object-contain ${deletedClass}" style="display:block;"></a>`;
-            } else if(isVid) {
-                accessoriesHtml += `<video src="${a.url}" controls class="max-w-[300px] mt-2 rounded-lg bg-black block"></video>`;
-            } else {
-                accessoriesHtml += `<div class="mt-2 p-3 rounded-md bg-[var(--bg-tertiary)] border border-[var(--border-color)] flex items-center"><a href="${a.url}" target="_blank" class="text-[var(--text-link)] font-mono text-sm">${a.filename}</a></div>`;
-            }
-        });
+    // Resolve Mentions Names
+    if (m.mentions) m.mentions.forEach(u => text = text.replace(`@${u.id}`, `@${u.global_name||u.username}`));
+    // Deleted Handling
+    let deletedHtml = '';
+    if(m.deleted) {
+        deletedHtml = `<span class="message-deleted-text-label">(deleted)</span>`;
+        // Text is handled by class
     }
-    if (m.embeds?.length > 0) accessoriesHtml += m.embeds.map(renderEmbed).join('');
 
+    const isMe = m.author.id === currentAccount.id;
+    let accessories = '';
+    if (m.attachments) m.attachments.forEach(a => {
+        if(a.content_type?.startsWith('image/')) accessories += `<a href="${a.url}" target="_blank"><img src="${a.url}" class="max-w-xs max-h-80 rounded-lg mt-2 block bg-gray-900"></a>`;
+        else accessories += `<div class="mt-2 p-3 bg-[var(--bg-tertiary)] border rounded w-fit text-sm"><a href="${a.url}" target="_blank" class="text-[var(--text-link)] font-mono">📎 ${a.filename}</a></div>`;
+    });
+    
+    const timeStr = formatTime(new Date(m.timestamp));
+    const containerClass = `message-group w-full relative pl-16 pr-4 ${grouped?'grouped mt-[2px]':'mt-[1.1rem]'} ${mentionsMe?'message-mentioned':''} ${m.deleted?'message-deleted':''} ${m.isFailed?'message-failed-text':''}`;
     const el = document.createElement('div'); 
-    el.id = `message-${m.id}`; 
-    el.className = `message-group ${isGrouped ? 'grouped' : ''} flex flex-col relative w-full`;
-    el.style.marginTop = isGrouped ? '2px' : '17px';
-    el.dataset.authorId = m.author.id;
+    el.className = containerClass; el.id = `message-${m.id}`; el.dataset.messageId=m.id; el.dataset.authorId=m.author.id;
+    
+    if(plugins.clickAction && !m.deleted) el.addEventListener('dblclick', () => startReply(m));
 
-    if (plugins.clickAction) el.addEventListener('dblclick', () => startReply(m));
-    if (m.isSending) el.classList.add('message-sending');
-    if (m.isFailed) el.classList.add('message-failed');
-
-    let historyHtml = '';
-    if(plugins.messageLogger && editedMessages[m.id]) {
-        historyHtml = `<div class="text-[var(--text-secondary)] opacity-80 text-sm line-through mb-1 whitespace-pre-wrap">${editedMessages[m.id]}</div>`;
+    let toolbar = '';
+    if(!m.deleted) {
+        toolbar = `<div class="message-toolbar absolute -top-4 right-4 rounded shadow-sm bg-[var(--bg-secondary)] flex items-center p-0.5 z-20 border border-[var(--border-color)]">
+            ${isMe ? `<button class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500" onclick="startEdit('${m.id}')">✏️</button><button class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-red-500" onclick="deleteMessage('${m.id}')">🗑️</button>` : ''}
+            <button class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-500" onclick='startReply(${JSON.stringify({id:m.id,author:m.author})})'>↩️</button>
+        </div>`;
     }
 
-    const isMe = currentAccount && m.author.id === currentAccount.id;
-    const delBtn = isMe ? `<button onclick="deleteMessage('${m.id}', event)" class="p-1 hover:bg-[var(--bg-primary)] rounded text-red-500"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
-    const editBtn = isMe ? `<button onclick="startEdit('${m.id}')" class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)]"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>` : '';
-    const replyBtn = `<button onclick='startReply(${JSON.stringify({id:m.id, author:m.author})})' class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)]"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></button>`;
-    
-    const toolbar = `<div class="message-toolbar absolute -top-4 right-4 rounded shadow-sm bg-[var(--bg-secondary)] flex items-center p-0.5 z-20 border border-[var(--border-color)]">${editBtn}${delBtn}${replyBtn}</div>`;
-
-    const editedTag = m.edited_timestamp ? '<span class="edited-tag text-[10px] text-[var(--text-secondary)] ml-1">(edited)</span>' : '';
-    
-    // Deleted Feature: Add (deleted) text at END of body
-    let deletedText = '';
-    if (m.deleted) {
-         deletedText = '<span class="message-deleted-text">(deleted)</span>';
+    let refHtml = '';
+    if(m.referenced_message && !grouped) {
+        const rm = m.referenced_message;
+        refHtml = `<div class="absolute top-1 left-[70px] -mt-5 opacity-70 text-sm flex items-center gap-1 w-fit cursor-pointer select-none" onclick="scrollToMsg('${rm.id}')"><div class="reply-spine"></div><img src="${rm.author?.avatar?`https://cdn.discordapp.com/avatars/${rm.author.id}/${rm.author.avatar}.png?size=16`:'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-4 h-4 rounded-full"><span class="font-bold text-xs">@${rm.author?.global_name||rm.author?.username||'User'}</span> <span class="text-xs truncate max-w-[200px]">${rm.content||'Click to view'}</span></div>`;
     }
 
-    const bodyContent = `<div class="message-body whitespace-pre-wrap leading-6 break-words text-[var(--text-primary)] relative">${contentHtml}${editedTag}${deletedText}</div>`;
-    const accessoriesContent = accessoriesHtml ? `<div class="message-accessories whitespace-normal mt-1 w-full max-w-full">${accessoriesHtml}</div>` : '';
-    const fullContentHtml = `${historyHtml}${bodyContent}${accessoriesContent}`;
-
-    if (isGrouped) {
-        el.innerHTML = `
-        ${toolbar}
-        <div class="flex items-start w-full">
-            <div style="width:56px;min-width:56px;"></div>
-            <div class="flex-1 min-w-0 pr-4">
-                ${fullContentHtml}
-            </div>
-        </div>`.replace(/\n\s+/g, '');
-    } 
-    else {
-        const member = m.member || {}; 
-        const name = member.nick || m.author.global_name || m.author.username;
-        const avUrl = member.avatar ? `https://cdn.discordapp.com/guilds/${currentChannel.guild_id}/users/${m.author.id}/avatars/${member.avatar}.png?size=64` : (m.author.avatar ? `https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${m.author.discriminator%5}.png`);
+    if(grouped) {
+        el.innerHTML = `${toolbar} <div class="message-content-text relative pl-1">${text}${deletedHtml}</div> ${accessories}`;
+    } else {
+        const u = m.author;
+        const avUrl = u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${u.discriminator%5}.png`;
+        let deco = u.avatar_decoration_data ? `<img src="https://cdn.discordapp.com/avatar-decoration-presets/${u.avatar_decoration_data.asset}.png?size=96" class="avatar-decoration">` : '';
         
-        let decoHtml = '';
-        if (m.author.avatar_decoration_data) { 
-             const decoUrl = `https://cdn.discordapp.com/avatar-decoration-presets/${m.author.avatar_decoration_data.asset}.png?size=96`; 
-             decoHtml = `<img src="${decoUrl}" class="avatar-decoration">`; 
-        }
-
-        const date = new Date(m.timestamp);
-        const timeStr = plugins.sendSeconds ? date.toLocaleTimeString() : date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        const usernameDisp = plugins.showMeYourName ? `<span class="ml-1 text-[0.8em] font-medium text-[var(--text-secondary)] opacity-70">@${m.author.username}</span>` : '';
-        const botTag = m.author.bot ? `<span class="ml-1.5 bg-[#5865F2] text-white text-[0.625rem] px-1.5 rounded-[0.1875rem] py-[1px] font-medium align-middle">BOT</span>` : '';
-
-        let refHtml = '';
-        if (m.referenced_message) {
-            const rm = m.referenced_message;
-            const refName = rm.author ? (rm.author.global_name || rm.author.username) : "Unknown";
-            const refAv = rm.author && rm.author.avatar ? `https://cdn.discordapp.com/avatars/${rm.author.id}/${rm.author.avatar}.png?size=16` : 'https://cdn.discordapp.com/embed/avatars/0.png';
-            refHtml = `
-            <div class="flex items-center gap-1 ml-[56px] mb-1 opacity-70 text-sm cursor-pointer hover:opacity-100 relative w-fit" onclick="scrollToMessage('${rm.id}')">
-                <div style="position:absolute;top:50%;left:-24px;width:34px;height:12px;border-left:2px solid var(--text-secondary);border-top:2px solid var(--text-secondary);border-top-left-radius:6px;margin-top:-2px;pointer-events:none;"></div>
-                <img src="${refAv}" class="w-4 h-4 rounded-full">
-                <span class="font-bold mr-1 truncate max-w-[200px]">${refName}</span>
-                <span class="truncate max-w-[300px]">${rm.content || '添付ファイル'}</span>
-            </div>`.replace(/\n\s+/g, '');
-        }
-
-        let nameStyle = m.member?.color ? `style="color:#${m.member.color.toString(16).padStart(6,'0')}"` : '';
-
         el.innerHTML = `
-        ${refHtml}
-        ${toolbar} 
-        <div class="flex mt-0.5 items-start w-full relative">
-            <div class="mr-4 relative flex-shrink-0 avatar-container">
-                <img src="${avUrl}" class="avatar-img shadow-sm hover:shadow-md transition-shadow rounded-full">
-                ${decoHtml}
-            </div>
-            <div class="flex-1 min-w-0 pr-4">
-                <div class="flex items-baseline leading-tight">
-                    <span class="font-medium mr-1 cursor-pointer hover:underline" ${nameStyle}>${name}</span>
-                    ${usernameDisp}${botTag}
-                    <span class="ml-2 text-xs text-[var(--text-secondary)]">${timeStr}</span>
-                </div>
-                ${fullContentHtml}
-            </div>
-        </div>`.replace(/\n\s+/g, ' ');
+        ${refHtml} ${toolbar}
+        <div class="absolute left-4 top-0 w-10 h-10 cursor-pointer avatar-container select-none">
+            <img src="${avUrl}" class="avatar-img rounded-full shadow-sm">
+            ${deco}
+        </div>
+        <div class="flex items-baseline gap-2 leading-snug">
+            <span class="font-medium hover:underline cursor-pointer" style="${m.member?.color?`color:#${m.member.color.toString(16).padStart(6,'0')}`:''}">${m.member?.nick||u.global_name||u.username}</span>
+            <span class="text-xs text-[var(--text-secondary)] font-medium">${timeStr}</span>
+        </div>
+        <div class="message-content-text mt-0.5 relative">${text}${deletedHtml}</div>
+        ${accessories}`;
     }
     
-    // Keep raw for editing
-    const contentText = el.querySelector('.message-body');
-    if(contentText) contentText.dataset.originalContent = m.content;
+    // System message handling (Join)
+    if(m.type === 7) {
+        el.className = 'px-4 py-2 opacity-70 flex items-center gap-2 text-green-500';
+        el.innerHTML = `<span>👋</span> <b>${m.author.global_name||m.author.username}</b> がサーバーに参加しました！`;
+    }
+
+    // Append Clyde if Failed
+    if (m.isFailed) {
+        const clydeId = 'clyde-'+m.id;
+        const clydeDiv = document.createElement('div');
+        clydeDiv.className = 'mt-1 ml-0 flex gap-2 select-none opacity-90';
+        clydeDiv.innerHTML = `<div class="w-[3px] bg-red-500 rounded ml-1"></div>
+            <div class="ml-2 text-sm">
+                <div class="flex items-center gap-1 mb-1">
+                    <span class="bg-[#5865F2] text-white text-[10px] px-1 rounded">Clyde</span>
+                    <span class="text-xs opacity-80">System</span>
+                </div>
+                <div class="opacity-90">メッセージを送信できませんでした (${m.errorReason || 'Unknown'})</div>
+                <div class="text-xs mt-1">
+                    <span class="opacity-70">これらはあなたにだけ表示されています</span> • 
+                    <span class="text-[var(--text-link)] cursor-pointer hover:underline" onclick="document.getElementById('message-${m.id}').remove()">メッセージを削除</span>
+                </div>
+            </div>`;
+        el.appendChild(clydeDiv);
+    }
 
     return el;
 }
 
 async function sendMessage() {
-    if (!currentChannel || !currentAccount) return;
-    const input = document.getElementById('message-input');
-    const content = input.value.trim();
-    if (!content && !attachedFile) return;
+    if(!currentChannel || !currentAccount) return;
+    const box = document.getElementById('message-input');
+    let txt = box.value.trim();
+    if(!txt && attachedFiles.length===0) return;
 
-    // Feature: Disable button to prevent spam
-    const btn = document.getElementById('send-button');
-    btn.disabled = true;
+    // Check Max Length
+    if (txt.length > maxCharCount) {
+        if(confirm(`文字数が多すぎます(${txt.length} / ${maxCharCount})。\n"message.txt" としてファイル送信しますか？`)) {
+            const blob = new Blob([txt], {type: 'text/plain'});
+            const file = new File([blob], "message.txt", {type: 'text/plain'});
+            if(attachedFiles.length < 10) attachedFiles.push(file);
+            txt = ""; 
+        } else return;
+    }
+    
+    // UI update immediate (clearing inputs) to prevent double click
+    const sendTxt = txt;
+    const sendFiles = [...attachedFiles];
+    box.value = ''; attachedFiles = []; renderAttachments(); handleInput();
 
+    // Temp Message
     const now = new Date();
-    const tempId = `temp-${now.getTime()}`;
-    const fakeMsg = { 
-        id: tempId, author: currentAccount, content: content, timestamp: now.toISOString(), isSending: true 
-    };
-    if (attachedFile) fakeMsg.attachments = [{ filename: attachedFile.name, url: '#', content_type: attachedFile.type }];
+    const tempId = 'temp-'+now.getTime();
+    const fake = { id:tempId, author:currentAccount, content:sendTxt, timestamp:now.toISOString(), isSending:true, attachments: sendFiles.map(f=>({url:'#',filename:f.name})) };
+    renderMsg(fake, true);
+
+    const body = new FormData();
+    body.append('payload_json', JSON.stringify({ content: sendTxt, message_reference: replyingTo ? { message_id: replyingTo.messageId } : undefined }));
+    sendFiles.forEach((f,i) => body.append(`files[${i}]`, f));
     
-    renderMsg(fakeMsg);
+    const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages`, 'POST', body, true);
     
-    input.value = ''; handleInput();
-    const container = document.getElementById('message-container');
-    container.scrollTop = container.scrollHeight; 
-
-    let body; let isForm = false;
-    const replyRef = replyingTo ? { message_id: replyingTo.messageId } : undefined;
-
-    if (attachedFile) { 
-        body = new FormData(); 
-        body.append('payload_json', JSON.stringify({ content: content, message_reference: replyRef }));
-        body.append('files[0]', attachedFile); 
-        isForm = true; 
+    const tempEl = document.getElementById(`message-${tempId}`);
+    if (res.error) {
+        // Replace temp styling with error state
+        fake.isSending = false; fake.isFailed = true; fake.errorReason = res.error.message || 'Error';
+        const newEl = createMessageElement(fake, tempEl?.classList.contains('grouped'));
+        if(tempEl) tempEl.replaceWith(newEl);
+        scrollBottom();
     } else {
-        body = { content: content, message_reference: replyRef };
+        if(tempEl) tempEl.remove(); // The websocket event will insert the real message, avoid duplicates
+        cancelReply();
     }
-
-    const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages`, 'POST', body, isForm);
-    if (!res.error) {
-         cancelAttachment(); cancelReply();
-    } else {
-         const el = document.getElementById(`message-${tempId}`);
-         if(el) {
-             el.classList.remove('message-sending'); el.classList.add('message-failed');
-         }
-         renderClydeError('送信失敗: ' + (res.error.message || 'Unknown Error'));
-    }
-    // Re-enable
-    btn.disabled = false;
 }
 
 function handleInput() {
-    const i = document.getElementById('message-input');
-    const s = document.getElementById('send-button');
-    const ctr = document.getElementById('char-counter');
-    
-    i.style.height = 'auto'; i.style.height = (i.scrollHeight) + 'px';
-    const len = i.value.length;
-    
-    // s.disabled Logic moved to SendMessage for spam prevention, but we update UI state here
-    if(!s.disabled) s.disabled = (i.value.trim() === '' && !attachedFile);
-    
-    if(plugins.showCharacter) {
-        ctr.classList.remove('opacity-0');
-        ctr.textContent = `${len} / ${maxCharCount}`;
-        ctr.style.color = (len > maxCharCount) ? '#ed4245' : 'var(--text-secondary)';
-    } else {
-        ctr.classList.add('opacity-0');
-    }
+    const i=document.getElementById('message-input'), b=document.getElementById('send-button'), c=document.getElementById('char-counter');
+    i.style.height='auto'; i.style.height=i.scrollHeight+'px';
+    const l=i.value.length;
+    b.disabled = l===0 && attachedFiles.length===0;
+    c.classList.toggle('opacity-0', !plugins.showCharacter);
+    c.innerText = `${l} / ${maxCharCount}`; c.style.color=l>maxCharCount?'#ed4245':'';
 }
 
-function connectWS() { 
-    if (!currentAccount) return; 
-    if (ws) ws.close();
-
-    ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json'); 
+function renderMsg(m, forceScroll=false) {
+    const c = document.getElementById('message-container');
+    const bottom = c.scrollTop + c.clientHeight >= c.scrollHeight - 50;
     
-    ws.onmessage = e => { 
-        const d = JSON.parse(e.data); 
-        if (d.s) lastSequence = d.s; 
+    const prev = c.lastElementChild;
+    let grouped = false;
+    if(prev && !m.isSending && !prev.classList.contains('message-sending') && !m.type) {
+         if(prev.dataset.authorId === m.author.id && !m.webhook_id && !m.referenced_message) grouped=true;
+    }
+    c.appendChild(createMessageElement(m, grouped));
+    
+    if (bottom || forceScroll || m.author.id === currentAccount.id) c.scrollTop = c.scrollHeight;
+}
+
+function connectWS() {
+    if (!currentAccount) return; if(ws) ws.close();
+    ws = new WebSocket('wss://gateway.discord.gg/?v=10&encoding=json');
+    ws.onmessage = e => {
+        const d = JSON.parse(e.data);
+        if (d.s) lastSequence = d.s;
+        if(d.op===10) { heartbeatInterval = setInterval(()=>ws.send(JSON.stringify({op:1,d:lastSequence})), d.d.heartbeat_interval); ws.send(JSON.stringify({op:2,d:{token:currentAccount.token,properties:{$os:"linux",$browser:"disco",$device:"disco"}}})); }
+        else if (d.t === 'READY') { if(d.d.user_settings?.guild_folders) { guildFolders=d.d.user_settings.guild_folders; renderFolders(); } }
+        else if (d.t === 'MESSAGE_CREATE' && d.d.channel_id===currentChannel?.id) { document.querySelectorAll('.message-sending').forEach(e=>e.remove()); renderMsg(d.d); }
+        else if (d.t === 'MESSAGE_CREATE') { 
+            const men = d.d.mentions?.find(u=>u.id===currentAccount.id);
+            if(men || (d.d.referenced_message?.author.id===currentAccount.id)) { pingCounts[d.d.channel_id]=(pingCounts[d.d.channel_id]||0)+1; updatePingDots(); }
+        }
+        else if (d.t === 'MESSAGE_DELETE' && messageStore[d.d.id]) { 
+            const m = messageStore[d.d.id]; m.deleted=true; rerenderMsg(d.d.id, m);
+        }
+        else if (d.t === 'MESSAGE_UPDATE' && d.d.id && messageStore[d.d.id]) {
+            const m = {...messageStore[d.d.id], ...d.d}; messageStore[d.d.id]=m; rerenderMsg(d.d.id, m);
+        }
+    }
+    ws.onclose = () => setTimeout(connectWS, 3000);
+}
+
+function rerenderMsg(id, m) {
+    const el = document.getElementById(`message-${id}`); if(!el) return;
+    const n = createMessageElement(m, el.classList.contains('grouped'));
+    el.replaceWith(n);
+}
+
+// Right Click Context Menu
+function handleContextMenu(e) {
+    const mEl = e.target.closest('.message-group');
+    const cEl = e.target.closest('.channel-item');
+    const sEl = e.target.closest('.server-icon');
+    
+    if (mEl || cEl || sEl) {
+        e.preventDefault();
+        const menu = document.getElementById('custom-context-menu');
+        menu.innerHTML = '';
         
-        if (d.op === 10) { 
-            heartbeatInterval = setInterval(()=>ws.send(JSON.stringify({op: 1, d: lastSequence})), d.d.heartbeat_interval); 
-            ws.send(JSON.stringify({ op: 2, d: { token: currentAccount.token, properties: { $os: "linux", $browser: "disco", $device: "disco" } } })); 
-        } else if (d.t === 'READY') {
-             if (d.d.user_settings?.guild_folders) { 
-                 guildFolders = d.d.user_settings.guild_folders; 
-                 // Fix: Re-render logic to ensure sort
-                 if (guildFolders.length > 0) renderFolders(); 
-             }
-        } else if (d.t === 'MESSAGE_CREATE') {
-             if (d.d.channel_id === currentChannel?.id) { 
-                if (d.d.author.id === currentAccount.id) {
-                    document.querySelectorAll('.message-sending').forEach(e => e.remove());
-                }
-                renderMsg(d.d);
-             }
-             if(d.d.guild_id && d.d.mentions?.find(u=>u.id===currentAccount.id)) {
-                 pingCounts[d.d.channel_id] = (pingCounts[d.d.channel_id]||0) + 1;
-                 updatePingDots();
-             }
-        } else if (d.t === 'MESSAGE_UPDATE') {
-             if (plugins.messageLogger && d.d.id) {
-                 const old = messageStore[d.d.id];
-                 if(old && d.d.content && old.content !== d.d.content) {
-                     const prevHistory = editedMessages[d.d.id] || "";
-                     const oldLine = `<div class="history-line">${parseMarkdown(old.content)}</div>`;
-                     editedMessages[d.d.id] = prevHistory + oldLine;
-                     
-                     const combined = { ...old, ...d.d };
-                     messageStore[d.d.id] = combined;
-                     rerenderMessage(d.d.id, combined);
-                 }
-             }
-        } else if (d.t === 'MESSAGE_DELETE') {
-             const id = d.d.id;
-             if (messageStore[id] && plugins.messageLogger) {
-                 const m = messageStore[id];
-                 m.deleted = true;
-                 rerenderMessage(id, m);
-             } else {
-                 const el = document.getElementById(`message-${id}`);
-                 if(el) el.remove();
-             }
+        const addItem = (txt, fn, color='') => {
+            const d = document.createElement('div'); d.className = `ctx-item ${color}`;
+            d.innerText = txt; d.onclick = fn; menu.appendChild(d);
+        };
+
+        if (mEl) {
+            const id = mEl.dataset.messageId;
+            const content = mEl.querySelector('.message-content-text')?.innerText || '';
+            const mData = messageStore[id];
+            
+            addItem('Copy Text', () => { navigator.clipboard.writeText(content); });
+            addItem('Copy ID', () => { navigator.clipboard.writeText(id); });
+            if (mData && mData.author.id === currentAccount.id && !mData.deleted) {
+                menu.appendChild(document.createElement('div')).className='ctx-sep';
+                addItem('Edit', () => startEdit(id));
+                addItem('Delete', () => deleteMessage(id), 'text-red-500');
+            }
         }
-    };
-    ws.onclose = () => { setTimeout(connectWS, 5000); };
-}
-
-function renderMsg(m) {
-    const container = document.getElementById('message-container');
-    const lastEl = container.lastElementChild;
-    let isGrouped = false;
-
-    if (lastEl && !m.isSending && !lastEl.classList.contains('message-sending')) {
-         const lastAuth = lastEl.dataset.authorId;
-         if(lastAuth === m.author.id && !m.webhook_id && !m.referenced_message) {
-             isGrouped = true;
-         }
-    }
-    
-    if (plugins.messageLogger) messageStore[m.id] = m;
-    
-    const el = createMessageElement(m, isGrouped);
-    container.appendChild(el);
-    container.scrollTop = container.scrollHeight;
-}
-
-function rerenderMessage(id, m) {
-    const oldEl = document.getElementById(`message-${id}`);
-    if (!oldEl) return;
-    const isGrouped = oldEl.classList.contains('grouped');
-    const newEl = createMessageElement(m, isGrouped);
-    oldEl.replaceWith(newEl);
-}
-
-async function addAccount(token, existingId = null) {
-    document.getElementById('login-error').innerText = "";
-    if (!token || !token.trim()) return;
-    token = token.trim().replace(/^"|"$/g, '');
-    const b = document.getElementById('add-account-button'), t = document.getElementById('add-account-button-text'), s = document.getElementById('login-spinner');
-    t.classList.add('hidden'); s.classList.remove('hidden'); b.disabled = true;
-    const result = await apiRequest(token, '/users/@me');
-    t.classList.remove('hidden'); s.classList.add('hidden'); b.disabled = false;
-    if (result.data && result.data.id) {
-        let a = getAccounts(); 
-        if(existingId && existingId !== result.data.id) return document.getElementById('login-error').innerText = "別のアカウントのトークンです";
-        const idx = a.findIndex(acc => acc.id === result.data.id);
-        const n = { ...result.data, token };
-        if (idx > -1) a[idx] = n; else a.push(n);
-        saveAccounts(a); switchAccount(result.data.id);
-    } else { document.getElementById('login-error').innerText = `エラー: ${result.error?.message || '無効なトークン'}`; }
-}
-
-function deleteAccount(id, e) {
-    if(e) e.stopPropagation(); 
-    if (!e.shiftKey && !confirm("このアカウントを削除しますか？ (Shift+Clickでスキップ)")) return;
-    let a = getAccounts(); a = a.filter(acc => acc.id !== id); saveAccounts(a);
-    if (getActiveAccountId() === id || !getActiveAccountId()) { localStorage.removeItem('activeAccountId'); showLoginScreen(); }
-    else { renderSavedAccountsList(); renderCurrentUserPanel(); }
-}
-
-async function deleteMessage(id, e) {
-    if (e.shiftKey || confirm("メッセージを削除しますか？")) { 
-        await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages/${id}`, 'DELETE'); 
-    }
-}
-
-function startEdit(id) { 
-    const msgEl = document.getElementById(`message-${id}`); 
-    if (!msgEl) return; 
-    const contentEl = msgEl.querySelector('.message-body'); // Changed selection target to body
-    if (!contentEl) return; 
-    const original = contentEl.dataset.originalContent || "";
-    
-    contentEl.innerHTML = `<textarea class="input-field w-full p-2 bg-[var(--bg-tertiary)] rounded outline-none h-auto border border-blue-500 font-sans" rows="3">${original}</textarea><div class="text-xs mt-1 text-[var(--text-link)] opacity-80">Enterで保存 - Escでキャンセル</div>`; 
-    const t = contentEl.querySelector('textarea'); 
-    t.focus(); 
-    t.onkeydown = async (e) => { 
-        if(e.key==='Enter' && !e.shiftKey) { 
-            e.preventDefault(); 
-            await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages/${id}`, 'PATCH', {content: t.value}); 
-        } else if(e.key==='Escape'){ 
-            rerenderMessage(id, messageStore[id]);
-        } 
-    };
-}
-
-function startReply(m) { 
-    replyingTo = { messageId: m.id, author: m.author }; 
-    const bar = document.getElementById('reply-bar');
-    bar.classList.remove('hidden'); bar.classList.add('flex'); 
-    document.getElementById('reply-username').innerText = m.author.global_name || m.author.username; 
-    document.getElementById('message-input').focus(); 
-}
-
-function cancelReply() { 
-    replyingTo = null; 
-    const bar = document.getElementById('reply-bar');
-    bar.classList.remove('flex'); bar.classList.add('hidden'); 
-}
-
-function cancelAttachment() {
-    attachedFile = null;
-    document.getElementById('file-input').value = "";
-    const preview = document.getElementById('attachment-preview-bar');
-    preview.classList.remove('flex'); preview.classList.add('hidden');
-    handleInput();
-}
-
-function scrollToMessage(id) {
-    const el = document.getElementById(`message-${id}`);
-    if (el) {
-        el.scrollIntoView({ behavior: 'auto', block: 'center' });
-        el.classList.add('flash-highlight');
-        setTimeout(() => el.classList.remove('flash-highlight'), 1500);
-    }
-}
-
-function parseMarkdown(t) { 
-    if (!t) return ''; 
-    return t.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-[var(--text-link)] hover:underline">$1</a>'); 
-}
-
-function renderEmbed(e) { 
-    return `<div style="border-left:4px solid ${e.color ? '#' + e.color.toString(16).padStart(6,'0') : '#ccc'};" class="bg-[var(--bg-tertiary)] p-3 rounded mt-2 max-w-xl text-sm break-words whitespace-normal block w-full">
-        ${e.title ? `<b class="block mb-1">${e.title}</b>` : ''}
-        ${e.description ? `<span>${parseMarkdown(e.description)}</span>` : ''}
-    </div>`.replace(/\n\s+/g, '');
-}
-
-function renderClydeError(t) { 
-    const c = document.getElementById('message-container'); 
-    const html = `<div class="p-2 text-red-500 font-bold bg-[var(--error-bg)] rounded my-2 border-l-4 border-red-500">System: ${t}</div>`;
-    c.insertAdjacentHTML('beforeend', html);
-    c.scrollTop = c.scrollHeight; 
-}
-
-function updatePingDots() { 
-    document.querySelectorAll('.ping-dot').forEach(e => e.remove());
-    Object.keys(pingCounts).forEach(chId => {
-        if(pingCounts[chId] > 0) {
-             const el = document.getElementById(`channel-${chId}`);
-             if (el && !el.querySelector('.ping-dot')) {
-                 el.insertAdjacentHTML('beforeend', '<div class="ping-dot"></div>');
-             }
+        else if (cEl) {
+            const id = cEl.dataset.channelId;
+            addItem('Copy Channel ID', () => navigator.clipboard.writeText(id));
         }
+        else if (sEl) {
+            const id = sEl.dataset.guildId;
+            addItem('Copy Server ID', () => navigator.clipboard.writeText(id));
+        }
+        
+        menu.classList.remove('hidden');
+        let x = e.pageX, y = e.pageY;
+        if(x + 200 > window.innerWidth) x -= 200;
+        menu.style.left = x + 'px'; menu.style.top = y + 'px';
+    } else {
+        document.getElementById('custom-context-menu').classList.add('hidden');
+    }
+}
+
+async function deleteMessage(id) {
+    await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages/${id}`, 'DELETE');
+    const el=document.getElementById(`message-${id}`);
+    if(el) { el.querySelector('.message-content-text').style.color='#ed4245'; el.classList.add('message-deleted'); }
+}
+
+function startEdit(id) {
+    const el = document.getElementById(`message-${id}`).querySelector('.message-content-text');
+    const old = messageStore[id]?.content || el.innerText;
+    el.innerHTML = `<textarea class="input-field w-full p-2 bg-[var(--bg-tertiary)] rounded outline-none h-auto border border-blue-500" rows="1">${old}</textarea><div class="text-xs mt-1"><span class="text-blue-500 cursor-pointer hover:underline" onclick="saveEdit('${id}', this.previousElementSibling.value)">保存</span> • <span class="cursor-pointer hover:underline" onclick="rerenderMsg('${id}', messageStore['${id}'])">キャンセル</span></div>`;
+    el.querySelector('textarea').focus();
+    el.querySelector('textarea').onkeydown = e => { if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(id, e.target.value); } if(e.key==='Escape') rerenderMsg(id, messageStore[id]); }
+}
+async function saveEdit(id, txt) { await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages/${id}`, 'PATCH', {content: txt}); }
+
+function editLastOwnMessage() {
+    const list = Array.from(document.querySelectorAll('.message-group'));
+    for (let i = list.length - 1; i >= 0; i--) {
+        const el = list[i];
+        if (el.dataset.authorId === currentAccount.id && !el.classList.contains('message-deleted') && !el.classList.contains('message-failed-text')) {
+            startEdit(el.dataset.messageId); break;
+        }
+    }
+}
+
+function addAccount(token) {
+    token = token.trim().replace(/^"|"$/g,'');
+    if(!token) return;
+    document.getElementById('login-error').innerText='';
+    const btn = document.getElementById('add-account-button'); btn.innerText='確認中...'; btn.disabled=true;
+    fetch('https://discord.com/api/v10/users/@me', {headers:{'Authorization':token}}).then(r=>r.json()).then(d=>{
+        btn.disabled=false; btn.innerText='ログイン';
+        if(d.id) { const a=getAccounts(); if(!a.find(x=>x.id===d.id)) a.push({...d, token}); else a[a.findIndex(x=>x.id===d.id)]={...d, token}; saveAccounts(a); switchAccount(d.id); }
+        else document.getElementById('login-error').innerText = "無効なトークンです";
     });
 }
+function deleteAccount(id,e) { e.stopPropagation(); const a=getAccounts().filter(x=>x.id!==id); saveAccounts(a); if(getActiveAccountId()===id) showLoginScreen(); else renderAccountSwitcher(); }
 
-function renderSettingsModal() {
-    switchSettingsTab('plugins');
-    renderPluginList();
-    renderThemeTab();
-    document.getElementById('settings-modal').classList.remove('hidden');
+function scrollToMsg(id) {
+    const el = document.getElementById(`message-${id}`);
+    if (el) { el.scrollIntoView({behavior:'auto',block:'center'}); el.classList.add('flash-highlight'); setTimeout(()=>el.classList.remove('flash-highlight'),1500); }
+    else alert('メッセージがロードされていません');
 }
 
-function switchSettingsTab(tabName) {
-    document.querySelectorAll('.settings-tab-item').forEach(e => e.classList.remove('active'));
-    document.getElementById(`tab-btn-${tabName}`).classList.add('active');
-    document.getElementById('tab-content-plugins').classList.add('hidden');
-    document.getElementById('tab-content-general').classList.add('hidden');
-    document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
-}
+function startReply(m) { replyingTo = {messageId: m.id, author: m.author}; document.getElementById('reply-bar').classList.remove('hidden'); document.getElementById('reply-bar').classList.add('flex'); document.getElementById('reply-username').innerText = m.author.global_name||m.author.username; document.getElementById('message-input').focus(); }
+function cancelReply() { replyingTo = null; document.getElementById('reply-bar').classList.add('hidden'); document.getElementById('reply-bar').classList.remove('flex'); }
 
 function renderPluginList() {
-    const list = document.getElementById('plugin-list'); 
-    list.innerHTML = '';
-    const defs = [
-        { key: 'clickAction', name: 'Double Click Reply', desc: 'メッセージをダブルクリックして返信します' },
-        { key: 'showMeYourName', name: 'Show Me Your Name', desc: 'ユーザー名の横に(@username)を表示' },
-        { key: 'sendSeconds', name: 'SendSeconds', desc: '送信時刻の秒数まで表示' },
-        { key: 'messageLogger', name: 'MessageLogger', desc: '削除/編集履歴を保持して表示' },
-        { key: 'showCharacter', name: 'Show Character Count', desc: '文字数を入力欄の右下に表示' }
+    const l = document.getElementById('plugin-list'); l.innerHTML = '';
+    const items = [
+        {k:'clickAction',n:'Double Click Reply',d:'ダブルクリックで返信'},
+        {k:'showCharacter',n:'Character Counter',d:'文字数カウンター表示'},
+        {k:'messageLogger',n:'Message Logger',d:'削除済みメッセージを表示(ログ保持)'},
     ];
-    defs.forEach(p => {
-        const item = document.createElement('div');
-        item.className = "plugin-item";
-        item.innerHTML = `<div><div class="font-bold text-[var(--text-primary)]">${p.name}</div><div class="text-xs text-[var(--text-secondary)] mt-0.5">${p.desc}</div></div><label class="switch"><input type="checkbox" ${plugins[p.key]?'checked':''} data-key="${p.key}"><span class="slider"></span></label>`;
-        item.querySelector('input').onchange = (e) => {
-            plugins[p.key] = e.target.checked;
-            localStorage.setItem('plugins', JSON.stringify(plugins));
-            handleInput(); 
-        }
-        list.appendChild(item);
+    items.forEach(p => {
+        l.innerHTML += `<div class="plugin-item"><div><div class="font-bold">${p.n}</div><div class="text-xs opacity-70">${p.d}</div></div><label class="switch"><input type="checkbox" ${plugins[p.k]?'checked':''} onchange="plugins['${p.k}']=this.checked;localStorage.setItem('plugins',JSON.stringify(plugins));handleInput()"><span class="slider"></span></label></div>`;
     });
-    // Add GitHub link manually at the bottom as per older request restoration
-    const gh = document.createElement('a');
-    gh.href = "https://github.com/discord-lite/discord-lite";
-    gh.target = "_blank";
-    gh.className = "block mt-4 text-xs text-blue-500 hover:underline";
-    gh.innerText = "GitHub Repository";
-    list.appendChild(gh);
+    l.innerHTML += `<a href="https://github.com/Bloxd-H/discord_lite" target="_blank" class="block mt-4 text-xs text-blue-500 hover:underline">GitHub Repository: Bloxd-H/discord_lite</a>`;
 }
-
-function renderThemeTab() {
-    const current = localStorage.theme || 'dark';
-    document.getElementById('theme-check-dark').classList.toggle('hidden', current !== 'dark');
-    document.getElementById('theme-check-light').classList.toggle('hidden', current !== 'light');
-}
-
-function setTheme(mode) {
-    if(mode === 'dark') {
-        document.documentElement.classList.add('dark');
-        localStorage.theme = 'dark';
-    } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.theme = 'light';
-    }
-    renderThemeTab();
-}
+function renderSettingsModal() { switchSettingsTab('plugins'); renderPluginList(); document.getElementById('theme-check-'+(localStorage.theme||'dark')).classList.remove('hidden'); document.getElementById('settings-modal').classList.remove('hidden'); }
+function switchSettingsTab(t) { document.querySelectorAll('.settings-tab-item').forEach(e=>e.classList.remove('active')); document.getElementById(`tab-btn-${t}`).classList.add('active'); document.querySelectorAll('[id^=tab-content]').forEach(e=>e.classList.add('hidden')); document.getElementById(`tab-content-${t}`).classList.remove('hidden'); }
+function setTheme(t) { localStorage.theme=t; document.documentElement.className=t==='dark'?'dark':''; document.getElementById('theme-check-dark').classList.toggle('hidden',t!=='dark'); document.getElementById('theme-check-light').classList.toggle('hidden',t!=='light'); }
+function updatePingDots() { document.querySelectorAll('.ping-dot').forEach(e=>e.remove()); Object.keys(pingCounts).forEach(id=>{if(pingCounts[id]>0) document.getElementById(`channel-${id}`)?.insertAdjacentHTML('beforeend','<div class="ping-dot"></div>')}); }
     </script>
 </body>
 </html>
