@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Lite</title>
+    <title>Discord Lite - Ultimate API Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,192 +11,74 @@
         }
     </script>
     <style>
-/* 定義された変数（以前のデザインに戻しました） */
+/* --- デザイン変数の完全復元 --- */
 :root {
-    --bg-primary: #f5f5f5;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #e3e5e8;
-    --bg-quaternary: #ebedef;
-    --text-primary: #060607;
-    --text-secondary: #5e6772;
-    --text-link: #00b0f4;
-    --border-color: #d1d5db;
-    --button-bg: #5865f2;
-    --button-text: #fff;
-    --hover-bg: #ebedef;
-    --active-bg: #dadce0;
-    --mention-bg: rgba(88, 101, 242, 0.1);
-    --mention-fg: #5865f2;
-    --mention-bg-highlight: rgba(250, 233, 105, 0.1);
-    --mention-border-highlight: #faa81a;
-    --error-bg: rgba(237, 66, 69, 0.05);
-    --error-border: #ed4245;
-    --code-bg: #f2f3f5;
-    --message-hover: rgba(6, 6, 7, 0.02);
-    --popup-bg: #ffffff;
-    --popup-highlight: #e3e5e8;
-    --deleted-bg: rgba(237, 66, 69, 0.05);
-    --reply-spine-color: #c4c9ce; 
+    --bg-primary: #f5f5f5; --bg-secondary: #ffffff; --bg-tertiary: #e3e5e8; --bg-quaternary: #ebedef;
+    --text-primary: #060607; --text-secondary: #5e6772; --text-link: #00b0f4; --border-color: #d1d5db;
+    --button-bg: #5865f2; --button-text: #fff; --hover-bg: #ebedef; --active-bg: #dadce0;
+    --mention-bg: rgba(88, 101, 242, 0.1); --mention-fg: #5865f2;
+    --mention-bg-highlight: rgba(250, 233, 105, 0.1); --mention-border-highlight: #faa81a;
+    --error-bg: rgba(237, 66, 69, 0.05); --error-border: #ed4245; --code-bg: #f2f3f5;
+    --message-hover: rgba(6, 6, 7, 0.02); --popup-bg: #ffffff; --popup-highlight: #e3e5e8;
+    --deleted-bg: rgba(237, 66, 69, 0.05); --reply-spine-color: #c4c9ce; 
     --folder-bg: rgba(88, 101, 242, 0.2);
 }
-
 html.dark {
-    --bg-primary: #313338;
-    --bg-secondary: #2b2d31;
-    --bg-tertiary: #1e1f22;
-    --bg-quaternary: #111214;
-    --text-primary: #f2f3f5;
-    --text-secondary: #949ba4;
-    --text-link: #00b0f4;
-    --border-color: #26272d;
-    --button-bg: #5865f2;
-    --button-text: #ffffff;
-    --hover-bg: #35373c;
-    --active-bg: #3f4147;
-    --mention-bg: rgba(88, 101, 242, 0.15);
-    --mention-fg: #c9cdfb;
-    --mention-bg-highlight: rgba(250, 166, 26, 0.1); /* Dark highlight fix */
-    --error-bg: rgba(240, 71, 71, 0.1);
-    --code-bg: #2b2d31;
-    --message-hover: rgba(2, 2, 2, 0.06);
-    --popup-bg: #2b2d31;
-    --popup-highlight: #35373c;
-    --deleted-bg: rgba(240, 71, 71, 0.1);
-    --reply-spine-color: #4f545c; 
+    --bg-primary: #313338; --bg-secondary: #2b2d31; --bg-tertiary: #1e1f22; --bg-quaternary: #111214;
+    --text-primary: #f2f3f5; --text-secondary: #949ba4; --text-link: #00b0f4; --border-color: #26272d;
+    --button-bg: #5865f2; --button-text: #ffffff; --hover-bg: #35373c; --active-bg: #3f4147;
+    --mention-bg: rgba(88, 101, 242, 0.15); --mention-fg: #c9cdfb;
+    --mention-bg-highlight: rgba(250, 166, 26, 0.1); --error-bg: rgba(240, 71, 71, 0.1);
+    --code-bg: #2b2d31; --message-hover: rgba(2, 2, 2, 0.06); --popup-bg: #2b2d31;
+    --popup-highlight: #35373c; --deleted-bg: rgba(240, 71, 71, 0.1); --reply-spine-color: #4f545c; 
     --folder-bg: rgba(88, 101, 242, 0.2);
 }
 
-/* Scrollbar Customization */
+/* --- コンポーネントスタイル --- */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background-color: var(--bg-secondary); }
 ::-webkit-scrollbar-thumb { background-color: var(--bg-quaternary); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background-color: var(--text-secondary); }
-
-/* Utility */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-#message-input::placeholder { color: var(--text-secondary); opacity: 0.7; }
-#message-input, .input-field { outline: none; border: none; }
-
-/* FIX: Scroll Anchoring for smooth history load */
-#message-container { overflow-anchor: none; }
-
-/* Drag and Drop Overlay */
-#drag-overlay {
-    pointer-events: none; opacity: 0; transition: opacity 0.2s;
-    background: rgba(88, 101, 242, 0.8);
-    border: 4px dashed white;
-}
-.dragging #drag-overlay { opacity: 1; pointer-events: auto; }
-
-/* Servers & Folders */
 .server-icon {
-    width: 48px; height: 48px; min-height: 48px;
-    border-radius: 50%;
+    width: 48px; height: 48px; min-height: 48px; border-radius: 50%;
     cursor: pointer; transition: all 0.2s cubic-bezier(0,0,0,1);
-    background-color: var(--bg-primary);
-    display: flex; align-items: center; justify-content: center;
+    background-color: var(--bg-primary); display: flex; align-items: center; justify-content: center;
     position: relative; overflow: visible; z-index: 10;
 }
 .server-icon img { border-radius: 50%; transition: border-radius 0.2s; }
 .server-icon:hover, .server-icon.active { border-radius: 16px; }
 .server-icon:hover img, .server-icon.active img { border-radius: 16px; }
-/* DMアイコン修正 */
 .server-icon.active::before {
     content: ''; position: absolute; left: -14px; top: 10px; height: 28px; width: 8px;
     background-color: var(--text-primary); border-radius: 0 4px 4px 0; transition: height 0.2s;
 }
 
 .folder-closed {
-    width: 48px; height: 48px; border-radius: 24px;
-    background-color: var(--folder-bg); cursor: pointer;
-    display: flex; flex-wrap: wrap; padding: 10px; gap: 4px;
-    align-items: center; justify-content: center;
-    transition: all 0.2s; z-index: 10;
+    width: 48px; height: 48px; border-radius: 24px; background-color: var(--folder-bg);
+    cursor: pointer; display: flex; flex-wrap: wrap; padding: 10px; gap: 4px;
+    align-items: center; justify-content: center; transition: all 0.2s; z-index: 10;
 }
-.folder-closed:hover { border-radius: 16px; background-color: var(--button-bg); }
 .folder-icon-thumb { width: 10px; height: 10px; object-fit: cover; border-radius: 50%; background: var(--bg-secondary); }
+.folder-opened { background-color: transparent !important; width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 
-.folder-opened {
-    background-color: transparent !important; color: var(--text-secondary);
-    width: 48px; height: 48px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; padding: 4px;
-}
-
-.ping-dot {
-    position: absolute; bottom: -2px; right: -2px; width: 16px; height: 16px;
-    background-color: #ed4245; border-radius: 50%; border: 4px solid var(--bg-tertiary);
-    z-index: 30; pointer-events: none;
-}
-.channel-item.active { background-color: var(--active-bg); color: var(--text-primary); }
-.channel-item:hover:not(.active) { background-color: var(--hover-bg); color: var(--text-primary); }
-
-.avatar-container {
-    width: 40px; height: 40px; margin-top: 2px;
-    position: relative; flex-shrink: 0;
-}
-.avatar-img { 
-    width: 100%; height: 100%; 
-    border-radius: 50%; object-fit: cover;
-    position: relative; z-index: 10;
-}
-/* デコレーション縦伸び修正 */
-.avatar-decoration { 
-    position: absolute; 
-    top: 50%; left: 50%; 
-    width: 150%; height: auto; aspect-ratio: 1/1; /* 縦横比維持 */
-    transform: translate(-50%, -50%); 
-    pointer-events: none; z-index: 20; 
-    object-fit: contain;
-}
-
-/* ユーザーの指摘を受けて構造を維持しつつ間隔調整 */
 .message-group { position: relative; margin-top: 1.5rem; width: 100%; display: flex; flex-direction: column; align-items: flex-start; }
-.message-group.grouped { margin-top: 0.125rem; } /* グループ化時は狭く */
+.message-group.grouped { margin-top: 0.125rem; }
 .message-group:hover { background-color: var(--message-hover); }
 .message-group:hover .message-toolbar { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.message-toolbar { opacity: 0; pointer-events: none; transform: translateY(-4px); transition: all 0.1s; border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.message-toolbar { opacity: 0; pointer-events: none; transform: translateY(-4px); transition: all 0.1s; border: 1px solid var(--border-color); background: var(--bg-secondary); position: absolute; right: 16px; top: -16px; z-index: 20; }
 
 .message-content-text { width: 100%; user-select: text; overflow-wrap: break-word; word-break: break-word; line-height: 1.375rem; color: var(--text-primary); }
-
-.message-sending { opacity: 0.5; } 
-.message-failed .message-content-text { color: #ed4245; }
-
-/* メンションの黄色ハイライト */
-.message-mentioned {
-    background-color: var(--mention-bg-highlight);
-    position: relative;
-}
-.message-mentioned::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-    width: 2px; background-color: var(--mention-border-highlight);
-}
-
-.deleted-text { color: #ed4245; }
-.history-line { font-size: 0.9em; color: var(--text-secondary); opacity: 0.8; text-decoration: line-through; display: block; margin-bottom: 2px; }
-.edited-tag { font-size: 0.625rem; color: var(--text-secondary); margin-left: 4px; user-select: none; }
+.message-mentioned { background-color: var(--mention-bg-highlight); position: relative; }
+.message-mentioned::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background-color: var(--mention-border-highlight); }
 
 .reply-spine {
-    position: absolute; top: 50%; left: -26px; 
-    width: 46px; height: 14px;
-    border-left: 2px solid var(--reply-spine-color);
-    border-top: 2px solid var(--reply-spine-color);
+    position: absolute; top: 50%; left: -26px; width: 46px; height: 14px;
+    border-left: 2px solid var(--reply-spine-color); border-top: 2px solid var(--reply-spine-color);
     border-top-left-radius: 6px; margin-top: -6px; pointer-events: none; z-index: 0;
 }
-
-/* 設定モーダルのレイアウト（以前のデザインに戻し） */
-.settings-tab-item { padding: 6px 12px; border-radius: 4px; cursor: pointer; color: var(--text-secondary); font-weight: 500; }
-.settings-tab-item:hover { background-color: var(--hover-bg); color: var(--text-primary); }
-.settings-tab-item.active { background-color: var(--active-bg); color: var(--text-primary); cursor: default; }
-
-.theme-card { width: 140px; height: 90px; border-radius: 8px; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s; }
-.theme-card:hover { transform: translateY(-2px); }
-.theme-card-check { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background-color: white; border: 3px solid var(--text-secondary); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-
-.category-arrow { transition: transform 0.2s; }
-.category-collapsed .category-arrow { transform: rotate(-90deg); }
-.channel-collapsed { display: none !important; }
 
 .switch { position: relative; display: inline-block; width: 40px; height: 24px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -205,13 +87,20 @@ html.dark {
 input:checked + .slider { background-color: #3ba55c; }
 input:checked + .slider:before { transform: translateX(16px); }
 
-.plugin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--bg-quaternary); }
-.plugin-item:last-child { border-bottom: none; }
+.loader { border: 4px solid var(--bg-tertiary); border-top: 4px solid var(--button-bg); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.avatar-decoration { position: absolute; top: 50%; left: 50%; width: 150%; height: auto; aspect-ratio: 1/1; transform: translate(-50%, -50%); pointer-events: none; z-index: 20; object-fit: contain; }
+.status-dot { position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--bg-tertiary); z-index: 20; }
+.status-dot.online { background-color: #3ba55d; }
+.status-dot.idle { background-color: #faa81a; }
+.status-dot.dnd { background-color: #ed4245; }
+.status-dot.offline { background-color: #747f8d; }
     </style>
 </head>
 <body class="font-sans h-screen flex flex-col overflow-hidden bg-gray-200 dark:bg-gray-800 text-[var(--text-primary)]">
     
-    <div id="drag-overlay" class="fixed inset-0 z-[200] flex flex-col items-center justify-center backdrop-blur-sm m-4 rounded-3xl border-dashed">
+    <div id="drag-overlay" class="fixed inset-0 z-[200] flex flex-col items-center justify-center backdrop-blur-sm m-4 rounded-3xl border-dashed opacity-0 pointer-events-none transition-opacity duration-200" style="background: rgba(88, 101, 242, 0.8); border: 4px dashed white;">
         <svg class="w-32 h-32 text-white animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
         <div class="text-white text-3xl font-bold">ドロップしてファイルをアップロード</div>
     </div>
@@ -229,26 +118,20 @@ input:checked + .slider:before { transform: translateX(16px); }
                 <div class="absolute top-6 right-8 cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]" onclick="document.getElementById('settings-modal').classList.add('hidden')">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </div>
-                
                 <div id="tab-content-plugins">
                     <h2 class="text-2xl font-bold mb-6">Plugins</h2>
                     <div id="plugin-list" class="space-y-4"></div>
                 </div>
-
                 <div id="tab-content-general" class="hidden">
                     <h2 class="text-2xl font-bold mb-6">General</h2>
                     <h3 class="text-sm font-bold uppercase text-[var(--text-secondary)] mb-4">THEME</h3>
                     <div class="flex gap-4">
                         <div class="theme-card bg-[#2f3136]" onclick="setTheme('dark')">
-                            <div class="theme-card-check" id="theme-check-dark">
-                                <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-                            </div>
+                            <div class="theme-card-check" id="theme-check-dark"><svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
                             <span class="text-white font-bold">Dark</span>
                         </div>
                         <div class="theme-card bg-[#ffffff] border border-gray-300" onclick="setTheme('light')">
-                            <div class="theme-card-check hidden" id="theme-check-light">
-                                <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-                            </div>
+                            <div class="theme-card-check hidden" id="theme-check-light"><svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
                             <span class="text-black font-bold">Light</span>
                         </div>
                     </div>
@@ -258,10 +141,7 @@ input:checked + .slider:before { transform: translateX(16px); }
     </div>
 
     <div id="auth-section" class="w-full max-w-md m-auto p-8 rounded-lg shadow-xl flex-col bg-white dark:bg-gray-700 hidden relative z-50">
-        <div id="migration-view" class="hidden flex-col items-center justify-center mb-4">
-            <div class="loader mb-2"></div>
-            <div class="text-sm font-bold text-center">データを更新中...</div>
-        </div>
+        <div id="migration-view" class="hidden flex-col items-center justify-center mb-4"><div class="loader mb-2"></div><div class="text-sm font-bold text-center">データを更新中...</div></div>
         <div id="account-selection-view" class="hidden flex-col">
             <h1 class="text-2xl font-bold text-center mb-6">おかえりなさい！</h1>
             <div id="saved-accounts-list" class="space-y-2 mb-4 max-h-80 overflow-y-auto"></div>
@@ -375,11 +255,11 @@ input:checked + .slider:before { transform: translateX(16px); }
         </div>
     </div>
     <script>
-// --- コア設定・変数 (API Base変更) ---
-const API_BASE = 'https://yakisoba.cloudfree.jp/avoidcord'; // Proxy API
+// API Endpoint & Global Vars
+const API_BASE = 'https://yakisoba.cloudfree.jp/avoidcord'; // 代替API
 let currentAccount = null;
 let currentChannel = null;
-let pollingInterval = null; // WebSocket代替用ポーリング変数
+let pollingInterval = null; // WebSocketの代わりのポーリングID
 let replyingTo = null;
 let oldestMessageId = null;
 let isLoadingMore = false;
@@ -392,7 +272,7 @@ let pingCounts = {};
 let messageStore = {}; 
 let editedMessages = {}; 
 let dragCounter = 0;
-let lastKnownMessageId = null; // ポーリング用最新ID保持
+let lastKnownMsgId = null; // ポーリング差分用
 
 const plugins = JSON.parse(localStorage.getItem('plugins')) || {
     showMeYourName: false,
@@ -402,8 +282,7 @@ const plugins = JSON.parse(localStorage.getItem('plugins')) || {
     showCharacter: true
 };
 
-// --- 画像プロキシ用ヘルパー関数 ---
-// すべてのDiscord CDN URLをyakisobaプロキシ経由に置換する
+// 画像プロキシ関数
 function proxyUrl(url) {
     if (!url) return "";
     return url.replace("cdn.discordapp.com", "yakisoba.cloudfree.jp/avoidcord");
@@ -464,7 +343,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sendMessage();
         }
     };
-    
+    // 前回の成功メッセージ編集ショートカット
     input.onkeydown = (e) => {
         if(e.key === 'ArrowUp' && input.value === '') {
              e.preventDefault();
@@ -565,8 +444,7 @@ async function apiRequest(token, path, method = 'GET', body = null, isFormData =
 }
 
 function cleanupState() {
-    // WebSocket変数をクリア（WSS廃止）
-    if (pollingInterval) clearInterval(pollingInterval);
+    if (pollingInterval) clearInterval(pollingInterval); // WSS廃止のためポーリング停止
     currentChannel = null;
     attachedFiles = [];
     document.getElementById('guild-list').innerHTML = '';
@@ -579,6 +457,7 @@ function cleanupState() {
     guildDataMap.clear();
     editedMessages = {};
     pingCounts = {};
+    lastKnownMsgId = null;
     
     cancelReply();
     renderAttachmentList();
@@ -596,38 +475,45 @@ function switchAccount(id) {
     updateView('app');
     renderCurrentUserPanel();
     loadGuilds();
-    startPolling(); // WSSの代わりにポーリング開始
+    startPolling(); // WebSocketの代わりにポーリング開始
 }
 
-// --- ポーリング実装 (WebSocket代替) ---
 function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
-    // 3秒ごとに最新メッセージをチェック
+    // 3秒間隔で最新メッセージを監視
     pollingInterval = setInterval(async () => {
         if (!currentChannel || !currentAccount) return;
+        // 最新1件を取得して差分チェック
         const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages?limit=1`);
         
         if (res.data && res.data.length > 0) {
             const latestMsg = res.data[0];
-            const container = document.getElementById('message-container');
-            const lastEl = container.lastElementChild;
             
-            // 最新メッセージIDが手元のラストと異なれば描画
-            if (!lastEl || lastEl.id !== `message-${latestMsg.id}`) {
-                let isGrouped = false;
-                if (lastEl && lastEl.dataset.authorId === latestMsg.author.id && !latestMsg.referenced_message) {
-                    // 簡易的な時間差判定などは省略し、ID一致でグループ化
-                    isGrouped = true;
-                }
-                const newEl = createMessageElement(latestMsg, isGrouped);
-                container.appendChild(newEl);
+            // 既知のIDと異なれば描画
+            if (latestMsg.id !== lastKnownMsgId) {
+                lastKnownMsgId = latestMsg.id;
                 
-                // 自分または最下部付近ならスクロール
-                if (latestMsg.author.id === currentAccount.id || container.scrollHeight - container.scrollTop - container.clientHeight < 200) {
-                    container.scrollTop = container.scrollHeight;
+                // すでにDOMにあるか念のためチェック
+                if (!document.getElementById(`message-${latestMsg.id}`)) {
+                    const container = document.getElementById('message-container');
+                    const lastEl = container.lastElementChild;
+                    
+                    let isGrouped = false;
+                    // 簡易的なグループ化判定 (ID一致)
+                    if (lastEl && lastEl.dataset.authorId === latestMsg.author.id) {
+                        isGrouped = true;
+                    }
+                    
+                    const newEl = createMessageElement(latestMsg, isGrouped);
+                    container.appendChild(newEl);
+                    
+                    // 自分 or 最下部付近ならスクロール
+                    if (latestMsg.author.id === currentAccount.id || container.scrollHeight - container.scrollTop - container.clientHeight < 200) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                    
+                    if (plugins.messageLogger) messageStore[latestMsg.id] = latestMsg;
                 }
-                
-                if (plugins.messageLogger) messageStore[latestMsg.id] = latestMsg;
             }
         }
     }, 3000);
@@ -675,7 +561,6 @@ function showTokenInput(account) {
         userInfo.classList.add('flex');
         document.getElementById('relogin-name').innerText = account.global_name || account.username;
         document.getElementById('relogin-username').innerText = account.username;
-        // アバターURLもプロキシ化
         const avatar = proxyUrl(account.avatar ? `https://cdn.discordapp.com/avatars/${account.id}/${account.avatar}.png?size=128` : `https://cdn.discordapp.com/embed/avatars/${account.discriminator % 5}.png`);
         document.getElementById('relogin-avatar').src = avatar;
         
@@ -776,7 +661,6 @@ function createServerIconElement(s, isInFolder = false) {
     el.title = s.name;
     el.onclick = () => loadChannels(s, el);
     
-    // 右クリックでサーバーIDコピー
     el.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         navigator.clipboard.writeText(s.id).then(() => alert('サーバーIDをコピーしました: ' + s.id));
@@ -872,7 +756,6 @@ async function loadGuilds() {
     guildDataMap.clear();
     res.data.forEach(s => guildDataMap.set(s.id, s));
     
-    // フォルダがない場合は単純リスト表示
     if (guildFolders.length > 0) { renderFolders(); } else {
         const list = document.getElementById('guild-list');
         list.innerHTML = '';
@@ -1004,6 +887,7 @@ async function selectChannel(ch) {
     container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><div class="loader"></div></div>';
     handleInput(); 
     
+    // 一気に50件取得
     const res = await apiRequest(currentAccount.token, `/channels/${ch.id}/messages?limit=50`);
     container.innerHTML = '';
     
@@ -1019,11 +903,13 @@ async function selectChannel(ch) {
         const fragment = document.createDocumentFragment();
         const arr = msgs.slice().reverse();
         
+        // ポーリング用最新ID
+        lastKnownMsgId = arr[arr.length-1].id;
+
         arr.forEach((m, i) => {
              if (plugins.messageLogger) messageStore[m.id] = m;
              const prev = (i > 0) ? arr[i-1] : null;
              
-             // グループ化条件
              const isGrouped = prev 
                 && (prev.author.id === m.author.id) 
                 && !m.referenced_message 
@@ -1037,7 +923,11 @@ async function selectChannel(ch) {
         });
         container.appendChild(fragment);
         container.scrollTop = container.scrollHeight;
+    } else {
+        container.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center opacity-50"><div class="text-2xl font-bold mb-2"># ${name}へようこそ！</div><div>ここが始まりです。</div></div>`;
     }
+    
+    startPolling();
 }
 
 async function loadMoreMessages() {
@@ -1087,7 +977,6 @@ async function loadMoreMessages() {
 
 document.getElementById('message-container').addEventListener('scroll', loadMoreMessages);
 
-// メッセージ作成 (画像プロキシ適用)
 function createMessageElement(m, isGrouped) {
     let contentHtml = parseMarkdown(m.content);
     if (m.mentions) {
@@ -1100,9 +989,7 @@ function createMessageElement(m, isGrouped) {
     let accessoriesHtml = '';
     if (m.attachments?.length > 0) {
         m.attachments.forEach(a => {
-            // ここでURLをプロキシ化
             let displayUrl = proxyUrl(a.url);
-            
             const isImg = a.content_type?.startsWith('image/');
             const isVid = a.content_type?.startsWith('video/');
             const deletedClass = m.deleted ? 'opacity-50 grayscale' : '';
@@ -1133,7 +1020,6 @@ function createMessageElement(m, isGrouped) {
 
     const isMe = currentAccount && m.author.id === currentAccount.id;
     
-    // SVG Icons
     const delBtn = isMe ? `<button onclick="deleteMessage('${m.id}', event)" class="p-1 hover:bg-[var(--bg-primary)] rounded text-red-500" title="削除"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
     const editBtn = isMe ? `<button onclick="startEdit('${m.id}')" class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)]" title="編集"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>` : '';
     const replyBtn = `<button onclick='startReply(${JSON.stringify({id:m.id, author:m.author})})' class="p-1 hover:bg-[var(--bg-primary)] rounded text-[var(--text-secondary)]" title="返信"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg></button>`;
@@ -1180,7 +1066,9 @@ function createMessageElement(m, isGrouped) {
         }
 
         const date = new Date(m.timestamp);
-        const timeStr = date.toLocaleString();
+        const y = date.getFullYear(); const mo = ('0'+(date.getMonth()+1)).slice(-2); const d = ('0'+date.getDate()).slice(-2);
+        const h = ('0'+date.getHours()).slice(-2); const mi = ('0'+date.getMinutes()).slice(-2); const s = ('0'+date.getSeconds()).slice(-2);
+        const timeStr = `${y} ${mo}/${d} ${h}:${mi}:${s}`;
         
         const usernameDisp = plugins.showMeYourName ? `<span class="ml-1 text-[0.8em] font-medium text-[var(--text-secondary)] opacity-70">@${m.author.username}</span>` : '';
         const botTag = m.author.bot ? `<span class="ml-1.5 bg-[#5865F2] text-white text-[0.625rem] px-1.5 rounded-[0.1875rem] py-[1px] font-medium align-middle">BOT</span>` : '';
@@ -1388,7 +1276,6 @@ function parseMarkdown(t) {
         .replace(/\n/g, '<br>'); 
 }
 
-// ユーザー設定周り
 function renderSettingsModal() {
     switchSettingsTab('plugins');
     renderPluginList();
@@ -1464,36 +1351,6 @@ async function addAccount(token, existingId = null) {
         document.getElementById('login-error').innerText = `エラー: ${result.error?.message || '無効なトークン'}`; 
     }
 }
-
-// タイムアウト確認
-async function checkTimeoutStatus(guildId) {
-    if (!guildId) return;
-    const {data: m} = await apiRequest(currentAccount.token, `/guilds/${guildId}/members/${currentAccount.id}`);
-    const end = m?.communication_disabled_until ? new Date(m.communication_disabled_until) : null;
-    
-    if (end && end > new Date()) {
-        const update = () => {
-            const now = new Date();
-            const diff = (end - now) / 1000;
-            if (diff <= 0) {
-                document.getElementById('message-input').disabled = false;
-                document.getElementById('message-input').placeholder = "メッセージを送信";
-            } else {
-                document.getElementById('message-input').disabled = true;
-                document.getElementById('message-input').placeholder = `タイムアウト中: ${Math.ceil(diff)}s`;
-                setTimeout(update, 1000);
-            }
-        };
-        update();
-    }
-}
-
-// ステータス更新 (擬似的)
-async function updateStatus(s) {
-    // APIには保存用エンドポイントがないことが多いが、擬似的にリクエストを送る
-    await apiRequest(currentAccount.token, '/users/@me/settings', 'PATCH', { status: s });
-}
-
     </script>
 </body>
 </html>
