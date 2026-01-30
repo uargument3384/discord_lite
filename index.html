@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Lite - Ultimate API Edition</title>
+    <title>Discord Lite - Absolute API Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -255,11 +255,11 @@ input:checked + .slider:before { transform: translateX(16px); }
         </div>
     </div>
     <script>
-// API Endpoint & Global Vars
+// --- コア設定・変数 (API Base変更) ---
 const API_BASE = 'https://yakisoba.cloudfree.jp/avoidcord'; // 代替API
 let currentAccount = null;
 let currentChannel = null;
-let pollingInterval = null; // WebSocketの代わりのポーリングID
+let pollingInterval = null; // WebSocket代替用ポーリング変数
 let replyingTo = null;
 let oldestMessageId = null;
 let isLoadingMore = false;
@@ -272,7 +272,7 @@ let pingCounts = {};
 let messageStore = {}; 
 let editedMessages = {}; 
 let dragCounter = 0;
-let lastKnownMsgId = null; // ポーリング差分用
+let lastKnownMsgId = null; // ポーリング用最新ID保持
 
 const plugins = JSON.parse(localStorage.getItem('plugins')) || {
     showMeYourName: false,
@@ -282,7 +282,8 @@ const plugins = JSON.parse(localStorage.getItem('plugins')) || {
     showCharacter: true
 };
 
-// 画像プロキシ関数
+// --- 画像プロキシ用ヘルパー関数 ---
+// すべてのDiscord CDN URLをyakisobaプロキシ経由に置換する
 function proxyUrl(url) {
     if (!url) return "";
     return url.replace("cdn.discordapp.com", "yakisoba.cloudfree.jp/avoidcord");
@@ -343,7 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sendMessage();
         }
     };
-    // 前回の成功メッセージ編集ショートカット
+    
     input.onkeydown = (e) => {
         if(e.key === 'ArrowUp' && input.value === '') {
              e.preventDefault();
@@ -444,7 +445,7 @@ async function apiRequest(token, path, method = 'GET', body = null, isFormData =
 }
 
 function cleanupState() {
-    if (pollingInterval) clearInterval(pollingInterval); // WSS廃止のためポーリング停止
+    if (pollingInterval) clearInterval(pollingInterval);
     currentChannel = null;
     attachedFiles = [];
     document.getElementById('guild-list').innerHTML = '';
@@ -475,44 +476,45 @@ function switchAccount(id) {
     updateView('app');
     renderCurrentUserPanel();
     loadGuilds();
-    startPolling(); // WebSocketの代わりにポーリング開始
+    startPolling();
 }
 
+// --- ポーリング実装 (limit=50に変更済み) ---
 function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
-    // 3秒間隔で最新メッセージを監視
     pollingInterval = setInterval(async () => {
         if (!currentChannel || !currentAccount) return;
-        // 最新1件を取得して差分チェック
-        const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages?limit=1`);
+        
+        // 50件まとめて取得して未表示分を追加
+        const res = await apiRequest(currentAccount.token, `/channels/${currentChannel.id}/messages?limit=50`);
         
         if (res.data && res.data.length > 0) {
-            const latestMsg = res.data[0];
+            const msgs = res.data.reverse();
+            const latestId = msgs[msgs.length - 1].id;
             
-            // 既知のIDと異なれば描画
-            if (latestMsg.id !== lastKnownMsgId) {
-                lastKnownMsgId = latestMsg.id;
-                
-                // すでにDOMにあるか念のためチェック
-                if (!document.getElementById(`message-${latestMsg.id}`)) {
-                    const container = document.getElementById('message-container');
-                    const lastEl = container.lastElementChild;
-                    
-                    let isGrouped = false;
-                    // 簡易的なグループ化判定 (ID一致)
-                    if (lastEl && lastEl.dataset.authorId === latestMsg.author.id) {
-                        isGrouped = true;
+            if (latestId !== lastKnownMsgId) {
+                lastKnownMsgId = latestId;
+                const container = document.getElementById('message-container');
+                let added = false;
+
+                msgs.forEach(m => {
+                    if (!document.getElementById(`message-${m.id}`)) {
+                        if (plugins.messageLogger) messageStore[m.id] = m;
+                        
+                        const lastEl = container.lastElementChild;
+                        let isGrouped = false;
+                        if (lastEl && lastEl.dataset.authorId === m.author.id && !m.referenced_message && m.type === 0) {
+                            isGrouped = true;
+                        }
+                        
+                        const newEl = createMessageElement(m, isGrouped);
+                        container.appendChild(newEl);
+                        added = true;
                     }
-                    
-                    const newEl = createMessageElement(latestMsg, isGrouped);
-                    container.appendChild(newEl);
-                    
-                    // 自分 or 最下部付近ならスクロール
-                    if (latestMsg.author.id === currentAccount.id || container.scrollHeight - container.scrollTop - container.clientHeight < 200) {
-                        container.scrollTop = container.scrollHeight;
-                    }
-                    
-                    if (plugins.messageLogger) messageStore[latestMsg.id] = latestMsg;
+                });
+
+                if (added && (container.scrollHeight - container.scrollTop - container.clientHeight < 200)) {
+                    container.scrollTop = container.scrollHeight;
                 }
             }
         }
@@ -887,7 +889,6 @@ async function selectChannel(ch) {
     container.innerHTML = '<div class="w-full h-full flex items-center justify-center"><div class="loader"></div></div>';
     handleInput(); 
     
-    // 一気に50件取得
     const res = await apiRequest(currentAccount.token, `/channels/${ch.id}/messages?limit=50`);
     container.innerHTML = '';
     
@@ -903,7 +904,6 @@ async function selectChannel(ch) {
         const fragment = document.createDocumentFragment();
         const arr = msgs.slice().reverse();
         
-        // ポーリング用最新ID
         lastKnownMsgId = arr[arr.length-1].id;
 
         arr.forEach((m, i) => {
@@ -923,8 +923,6 @@ async function selectChannel(ch) {
         });
         container.appendChild(fragment);
         container.scrollTop = container.scrollHeight;
-    } else {
-        container.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center opacity-50"><div class="text-2xl font-bold mb-2"># ${name}へようこそ！</div><div>ここが始まりです。</div></div>`;
     }
     
     startPolling();
@@ -990,6 +988,7 @@ function createMessageElement(m, isGrouped) {
     if (m.attachments?.length > 0) {
         m.attachments.forEach(a => {
             let displayUrl = proxyUrl(a.url);
+            
             const isImg = a.content_type?.startsWith('image/');
             const isVid = a.content_type?.startsWith('video/');
             const deletedClass = m.deleted ? 'opacity-50 grayscale' : '';
@@ -1276,6 +1275,7 @@ function parseMarkdown(t) {
         .replace(/\n/g, '<br>'); 
 }
 
+// ユーザー設定周り
 function renderSettingsModal() {
     switchSettingsTab('plugins');
     renderPluginList();
